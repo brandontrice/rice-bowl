@@ -127,17 +127,44 @@ already refreshes itself while someone is watching. What the workflow adds
 is scoring when *nobody* has a tab open, so the standings are current the
 next time either manager looks.
 
-**One setup step.** Add the same `CRON_SECRET` value as a repository
-secret, at Settings → Secrets and variables → Actions → New repository
-secret. Without it the workflow fails loudly on its first run rather than
-silently doing nothing. With the GitHub CLI:
+**One setup step: give GitHub the shared secret.**
 
-```bash
-gh secret set CRON_SECRET --repo brandontrice/rice-bowl
+`CRON_SECRET` is one string that has to exist in three places that cannot
+see each other:
+
+| Where | Who reads it | How it got there |
+| --- | --- | --- |
+| `.env.local` | your machine, `npm run dev` | generated once |
+| Vercel env vars | the deployed app, to check callers | `vercel env add` |
+| GitHub repo secret | the workflow, to prove it's allowed | **still to do** |
+
+The workflow sends it as `Authorization: Bearer …`; the app compares it to
+its own copy and returns 401 on a mismatch. They only work if all three
+strings are identical.
+
+In the browser — this is GitHub's repository settings, not VS Code's and
+not Vercel's:
+
+1. Open <https://github.com/brandontrice/rice-bowl/settings/secrets/actions>
+2. Click **New repository secret**
+3. Name: `CRON_SECRET`
+4. Secret: paste the value of `CRON_SECRET` from your local `.env.local`
+5. **Add secret**
+
+Or, with the [GitHub CLI](https://cli.github.com) installed
+(`winget install GitHub.cli`), from the project directory:
+
+```powershell
+$value = (Select-String '^CRON_SECRET=' .env.local).Line -replace '^CRON_SECRET=', ''
+$value | gh secret set CRON_SECRET --repo brandontrice/rice-bowl
 ```
 
-The production URL is baked in as a default. If the domain ever changes,
-add an `APP_URL` repository *variable* rather than editing the workflow.
+Without it the workflow fails loudly on its first run rather than silently
+doing nothing.
+
+The production URL is baked into the workflow as a default. If the domain
+ever changes, add an `APP_URL` repository *variable* rather than editing
+the workflow.
 
 **Schedule** (UTC — GitHub cron has no timezone support):
 
