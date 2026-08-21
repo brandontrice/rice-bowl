@@ -26,11 +26,25 @@ in the Supabase SQL Editor:
 | `0002_allowlist_read.sql` | Read access to `manager_allowlist` for the waiting room |
 | `0003_atomic_pick_and_indexes.sql` | The `make_pick()` locking function, week-scoped indexes, Realtime on `weekly_scores`, and the `ppg`/`pos_rank` columns the draft board ranks by |
 
-All three are idempotent, so re-running them is safe.
+Only `0003` is safe to re-run: it guards every statement with `if not
+exists` or a `do` block. `0001` and `0002` are not — between them they
+have 21 bare `create policy` statements, a `create trigger`, and several
+`alter publication ... add table`, all of which error if the object is
+already there.
 
-Alternatively, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
-installed and the project linked, `supabase db push` applies anything not
-yet run. See [Command-line access](#command-line-access) below.
+This matters if you adopt the CLI after applying anything by hand. The
+CLI tracks what it has run in `supabase_migrations.schema_migrations`,
+and SQL Editor runs never touch that table, so `db push` would try to
+replay everything. Record the hand-applied ones first:
+
+```bash
+npx --yes supabase@latest migration list                      # local vs remote
+npx --yes supabase@latest migration repair --status applied 0001 0002
+npx --yes supabase@latest db push                             # now applies only 0003
+```
+
+`migration repair` only writes to that bookkeeping table — it does not
+run or alter any schema.
 
 ### 2. Seed the manager allowlist
 
@@ -166,9 +180,12 @@ npx --yes supabase@latest link --project-ref bsnsivjuajvwnsipeggf
 ```
 
 It prompts for the database password — the Postgres password set when the
-project was created, resettable under Project Settings → Database. `link`
-writes `supabase/config.toml`, which should be committed, and a
-`supabase/.temp/` cache, which should not.
+project was created, resettable under Project Settings → Database.
+
+On CLI 2.x, `link` stores its state in `supabase/.temp/` (gitignored) and
+does not create a `config.toml`; you only get one by running
+`supabase init`, which this project does not need since there is no local
+Postgres in the loop.
 
 **Day to day:**
 

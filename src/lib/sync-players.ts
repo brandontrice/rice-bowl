@@ -27,26 +27,60 @@ export async function isPlayerPoolStale(
 }
 
 /**
+ * How many entries carry a real games-played count.
+ *
+ * In the preseason, Sleeper's stats endpoint for the current year answers
+ * 200 with thousands of entries that hold only projection *rank* fields —
+ * no `gp`, no `pts_half_ppr`. So "did the request return anything" is not
+ * a usable test for whether a season can be ranked from; this is.
+ */
+function usableStatLines(stats: Record<string, SleeperStatLine>): number {
+  let count = 0;
+  for (const line of Object.values(stats)) {
+    if (typeof line?.gp === "number" && line.gp > 0) count++;
+  }
+  return count;
+}
+
+const MIN_USABLE_LINES = 50;
+
+/**
  * Pulls Sleeper's player pool, attaches a production ranking, and upserts.
  *
  * The ranking is what makes the draft board sortable by "best available"
- * instead of alphabetically. It is derived from season-to-date half-PPR
- * points per game; in the opening weeks of a season those are empty, so we
- * fall back to last season rather than shipping an unranked board.
+ * instead of alphabetically, and is derived from half-PPR points per game
+ * over whichever season actually has production in it — see the comments
+ * below, because "the current season" is the wrong answer for a chunk of
+ * the year.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function syncPlayers(supabase: SupabaseClient<any>): Promise<number> {
+export async function syncPlayers(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+): Promise<{ synced: number; ranked: number; rankedFrom: number | null }> {
   const [players, state] = await Promise.all([
     fetchSleeperPlayerPool(),
     fetchSleeperState(),
   ]);
 
   const seasonYear = Number(state.season);
-  let stats: Record<string, SleeperStatLine> = await fetchSleeperSeasonStats(
-    seasonYear,
-  ).catch(() => ({}));
-  if (Object.keys(stats).length === 0 && Number.isFinite(seasonYear)) {
-    stats = await fetchSleeperSeasonStats(seasonYear - 1).catch(() => ({}));
+
+  // During the preseason the previous year is the only season with real
+  // production in it, so try it first rather than falling back to it.
+  const candidates = Number.isFinite(seasonYear)
+    ? state.season_type === "pre"
+      ? [seasonYear - 1, seasonYear]
+      : [seasonYear, seasonYear - 1]
+    : [];
+
+  let stats: Record<string, SleeperStatLine> = {};
+  let rankedFrom: number | null = null;
+  for (const year of candidates) {
+    const attempt = await fetchSleeperSeasonStats(year).catch(() => ({}));
+    if (usableStatLines(attempt) >= MIN_USABLE_LINES) {
+      stats = attempt;
+      rankedFrom = year;
+      break;
+    }
   }
 
   const ranked: Player[] = players.map((p) => {
@@ -90,7 +124,11 @@ export async function syncPlayers(supabase: SupabaseClient<any>): Promise<number
     if (error) throw new Error(error.message);
   }
 
-  return ranked.length;
+  return {
+    synced: ranked.length,
+    ranked: ranked.filter((p) => p.pos_rank !== null).length,
+    rankedFrom,
+  };
 }
 
 /**

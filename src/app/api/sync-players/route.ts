@@ -13,7 +13,7 @@ export async function POST() {
   }
 
   try {
-    return NextResponse.json({ synced: await syncPlayers(supabase) });
+    return NextResponse.json(await syncPlayers(supabase));
   } catch (error) {
     const message = error instanceof Error ? error.message : "sync failed";
     return NextResponse.json({ error: message }, { status: 500 });

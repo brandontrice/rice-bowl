@@ -10,8 +10,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const synced = await syncPlayers(createServiceClient());
-    return NextResponse.json({ ok: true, synced });
+    const result = await syncPlayers(createServiceClient());
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "sync failed";
     return NextResponse.json({ error: message }, { status: 500 });
