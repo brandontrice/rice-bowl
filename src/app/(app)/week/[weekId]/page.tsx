@@ -1,20 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentManager, getManagers, getBowlStandings } from "@/lib/data";
 import { HouseRuleCard } from "@/components/HouseRuleCard";
+import { DealtCard } from "@/components/DealtCard";
+import { HeadToHead } from "@/components/HeadToHead";
 import { RosterGrid } from "@/components/RosterGrid";
 import { TrashTalkBoard } from "@/components/TrashTalkBoard";
 import { BowlStandings } from "@/components/BowlStandings";
 import { WagerLedger } from "@/components/WagerLedger";
 import { RefreshScoresButton } from "@/components/RefreshScoresButton";
+import { LiveScores } from "@/components/LiveScores";
+import { Shell } from "@/components/ui/Shell";
+import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
 import type { DraftPick, Player, TrashTalk, Wager, Draft } from "@/types/database";
 
-export default async function WeekPage({
-  params,
-}: {
-  params: Promise<{ weekId: string }>;
-}) {
+export default async function WeekPage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
   const supabase = await createClient();
 
@@ -25,54 +27,64 @@ export default async function WeekPage({
     .single();
   if (!week) notFound();
 
-  const draft = (week.drafts as Draft[] | Draft | null | undefined) as Draft | Draft[] | null;
+  const draft = week.drafts as Draft[] | Draft | null | undefined;
   const draftRow: Draft | null = Array.isArray(draft) ? (draft[0] ?? null) : (draft ?? null);
   const draftNotDone = !draftRow || draftRow.status !== "complete";
 
-  const [managers, currentManager, standings] = await Promise.all([
+  // Everything below depends only on the week we just loaded, so it all goes
+  // out at once. This page used to await seven queries in sequence before it
+  // rendered a single pixel.
+  const [
+    managers,
+    currentManager,
+    standings,
+    { data: siblingWeeks },
+    { data: trashTalk },
+    { data: wagers },
+    { data: picksRaw },
+    { data: scoreRows },
+  ] = await Promise.all([
     getManagers(),
     getCurrentManager(),
     getBowlStandings(),
+    supabase
+      .from("weeks")
+      .select("id, week_number")
+      .eq("season_id", week.season_id)
+      .order("week_number", { ascending: true }),
+    supabase.from("trash_talk").select("*").eq("week_id", weekId),
+    supabase
+      .from("wagers")
+      .select("*")
+      .eq("week_id", weekId)
+      .order("created_at", { ascending: false }),
+    draftNotDone
+      ? Promise.resolve({ data: [] })
+      : supabase.from("draft_picks").select("*, players(*)").eq("week_id", weekId),
+    draftNotDone
+      ? Promise.resolve({ data: [] })
+      : supabase.from("weekly_scores").select("*").eq("week_id", weekId),
   ]);
 
-  const { data: siblingWeeks } = await supabase
-    .from("weeks")
-    .select("id, week_number")
-    .eq("season_id", week.season_id)
-    .order("week_number", { ascending: true });
   const idx = (siblingWeeks ?? []).findIndex((w) => w.id === weekId);
   const prevWeek = idx > 0 ? siblingWeeks![idx - 1] : null;
   const nextWeek = idx >= 0 && idx < (siblingWeeks?.length ?? 0) - 1 ? siblingWeeks![idx + 1] : null;
-
-  const { data: trashTalk } = await supabase.from("trash_talk").select("*").eq("week_id", weekId);
-  const { data: wagers } = await supabase
-    .from("wagers")
-    .select("*")
-    .eq("week_id", weekId)
-    .order("created_at", { ascending: false });
 
   const sniperManager = week.sniper_manager_id
     ? (managers.find((m) => m.id === week.sniper_manager_id) ?? null)
     : null;
 
-  let picks: (DraftPick & { players: Player | null })[] = [];
+  const picks = (picksRaw ?? []) as (DraftPick & { players: Player | null })[];
   const scoreMap = new Map<string, number>();
   const totalsByManager = new Map<string, number>();
-  let hasScores = false;
-
-  if (!draftNotDone) {
-    const [{ data: picksRaw }, { data: scoreRows }] = await Promise.all([
-      supabase.from("draft_picks").select("*, players(*)").eq("week_id", weekId),
-      supabase.from("weekly_scores").select("*").eq("week_id", weekId),
-    ]);
-    picks = (picksRaw ?? []) as (DraftPick & { players: Player | null })[];
-    for (const row of scoreRows ?? []) {
-      scoreMap.set(row.player_id, row.points);
-      totalsByManager.set(row.manager_id, (totalsByManager.get(row.manager_id) ?? 0) + row.points);
-    }
-    hasScores = (scoreRows ?? []).length > 0;
+  for (const row of (scoreRows ?? []) as { player_id: string; manager_id: string; points: number }[]) {
+    scoreMap.set(row.player_id, row.points);
+    totalsByManager.set(row.manager_id, (totalsByManager.get(row.manager_id) ?? 0) + row.points);
   }
+  const hasScores = (scoreRows ?? []).length > 0;
 
+  // The action colour follows whoever is ahead, so the page picks up the
+  // rivalry rather than staying a fixed brand orange.
   let leadingAccent: string | null = null;
   if (hasScores && managers.length === 2) {
     const [a, b] = managers;
@@ -81,47 +93,91 @@ export default async function WeekPage({
     if (scoreA !== scoreB) leadingAccent = scoreA > scoreB ? a.accent_color : b.accent_color;
   }
 
+  const [a, b] = managers;
+  const margin =
+    hasScores && a && b
+      ? Math.abs((totalsByManager.get(a.id) ?? 0) - (totalsByManager.get(b.id) ?? 0))
+      : null;
+  const leaderName =
+    leadingAccent && a && b
+      ? (totalsByManager.get(a.id) ?? 0) > (totalsByManager.get(b.id) ?? 0)
+        ? a.display_name
+        : b.display_name
+      : null;
+
   return (
-    <div
-      className="flex flex-col gap-6"
+    <Shell
       style={leadingAccent ? ({ "--accent": leadingAccent } as React.CSSProperties) : undefined}
     >
-      <div className="flex items-center justify-between text-xs text-canvas-muted">
+      <LiveScores weekId={weekId} live={!draftNotDone && week.status !== "complete"} />
+
+      <nav className="flex items-center justify-between gap-3 text-xs">
         {prevWeek ? (
-          <Link href={`/week/${prevWeek.id}`} className="hover:text-canvas-fg">
+          <Link href={`/week/${prevWeek.id}`} className="font-data text-ink-dim hover:text-ink">
             ← Week {prevWeek.week_number}
           </Link>
         ) : (
           <span />
         )}
-        <span className="font-display text-lg uppercase tracking-wide text-canvas-fg">
+        <span className="font-display text-lg uppercase tracking-wide text-ink">
           Week {week.week_number}
         </span>
         {nextWeek ? (
-          <Link href={`/week/${nextWeek.id}`} className="hover:text-canvas-fg">
+          <Link href={`/week/${nextWeek.id}`} className="font-data text-ink-dim hover:text-ink">
             Week {nextWeek.week_number} →
           </Link>
         ) : (
           <span />
         )}
-      </div>
+      </nav>
 
-      <HouseRuleCard week={week} sniperManager={sniperManager} />
+      <DealtCard weekId={weekId}>
+        <HouseRuleCard week={week} sniperManager={sniperManager} />
+      </DealtCard>
 
       {draftNotDone ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-canvas-border p-8 text-center">
-          <p className="text-sm text-canvas-muted">
-            {draftRow?.status === "active" ? "The draft is underway." : "The draft hasn't started yet."}
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-seam p-10 text-center">
+          <p className="text-sm text-ink-dim">
+            {draftRow?.status === "active"
+              ? "The draft is underway."
+              : "The draft hasn't started yet."}
           </p>
           <Link
             href={`/week/${weekId}/draft`}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-ground hover:opacity-90"
           >
             {draftRow?.status === "active" ? "Rejoin the draft" : "Enter the draft room"}
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <>
+          {managers.length === 2 && (
+            <HeadToHead
+              managers={managers}
+              values={totalsByManager}
+              unit="Points"
+              footNote={
+                <>
+                  <span>
+                    {!hasScores
+                      ? "No stats yet — Sleeper posts them after games finish."
+                      : margin === 0
+                        ? "Dead level."
+                        : (
+                            <>
+                              {leaderName} leads by{" "}
+                              <strong className="font-semibold text-ink">
+                                {margin?.toFixed(1)}
+                              </strong>
+                            </>
+                          )}
+                  </span>
+                  {week.status !== "complete" && <RefreshScoresButton weekId={weekId} />}
+                </>
+              }
+            />
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {managers.map((m) => (
               <RosterGrid
@@ -135,12 +191,7 @@ export default async function WeekPage({
               />
             ))}
           </div>
-          {week.status !== "complete" && (
-            <div className="flex justify-end">
-              <RefreshScoresButton weekId={weekId} />
-            </div>
-          )}
-        </div>
+        </>
       )}
 
       {currentManager && (
@@ -155,6 +206,27 @@ export default async function WeekPage({
       <BowlStandings managers={managers} standings={standings} />
 
       <WagerLedger weekId={weekId} managers={managers} initial={(wagers ?? []) as Wager[]} />
-    </div>
+    </Shell>
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ weekId: string }>;
+}): Promise<Metadata> {
+  const { weekId } = await params;
+  const supabase = await createClient();
+  const { data: week } = await supabase
+    .from("weeks")
+    .select("week_number, house_rule_key")
+    .eq("id", weekId)
+    .maybeSingle();
+
+  if (!week) return { title: "Week" };
+  const rule = HOUSE_RULE_BY_KEY[week.house_rule_key];
+  return {
+    title: `Week ${week.week_number}`,
+    description: rule ? `${rule.name} — ${rule.tagline}` : undefined,
+  };
 }

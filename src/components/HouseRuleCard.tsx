@@ -1,26 +1,28 @@
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
+import { RULE_STYLE } from "@/lib/rule-style";
 import type { Manager, Week } from "@/types/database";
 
-const ENFORCEMENT_LABEL: Record<string, string> = {
-  scoring: "Scoring modifier",
-  "draft-pool": "Pool restriction",
-  "roster-constraint": "Roster rule",
-  "draft-order": "Draft order",
-  visibility: "Draft visibility",
-  honor: "Honor rule",
-};
-
+/**
+ * The week's dealt card. This is the thing the whole game hangs on, so it
+ * gets a treatment nothing else in the app has: a double rule inset like a
+ * playing card, and a corner glow in the category's colour.
+ */
 export function HouseRuleCard({
   week,
   sniperManager,
   compact = false,
 }: {
-  week: Pick<Week, "house_rule_key" | "locked_division" | "locked_conference" | "sniper_manager_id">;
+  week: Pick<
+    Week,
+    "week_number" | "house_rule_key" | "locked_division" | "locked_conference" | "sniper_manager_id"
+  > & { week_number?: number };
   sniperManager?: Manager | null;
   compact?: boolean;
 }) {
   const rule = HOUSE_RULE_BY_KEY[week.house_rule_key];
   if (!rule) return null;
+
+  const style = RULE_STYLE[rule.enforcement];
 
   let extra: string | null = null;
   if (rule.key === "division_lockdown" && week.locked_division) {
@@ -32,27 +34,52 @@ export function HouseRuleCard({
   }
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-canvas-border bg-gradient-to-br from-canvas-card-raised to-canvas-card p-5 shadow-lg ${compact ? "" : "sm:p-6"}`}
+    <article
+      className="relative overflow-hidden rounded-2xl border border-seam bg-surface p-5 sm:p-6"
+      style={{
+        backgroundImage: `radial-gradient(120% 140% at 88% -20%, color-mix(in srgb, ${style.color} 14%, transparent), transparent 62%)`,
+      }}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-canvas-muted">
-          This Week&apos;s House Rule
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-1.5 rounded-xl border border-seam-soft"
+      />
+
+      <div className="relative flex items-center justify-between gap-3">
+        <span className="label">
+          {week.week_number ? `Week ${week.week_number} · ` : ""}House Rule
         </span>
-        <span className="rounded-full border border-canvas-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-canvas-muted">
-          {ENFORCEMENT_LABEL[rule.enforcement]}
+        <span
+          className="rounded-full border px-2.5 py-1 font-data text-[10px] uppercase tracking-[0.1em]"
+          style={{
+            color: style.color,
+            borderColor: `color-mix(in srgb, ${style.color} 45%, transparent)`,
+            backgroundColor: `color-mix(in srgb, ${style.color} 10%, transparent)`,
+          }}
+        >
+          {style.label}
         </span>
       </div>
-      <h2 className="mt-2 font-display text-3xl uppercase tracking-wide text-canvas-fg sm:text-4xl">
+
+      <h2 className="font-display relative mt-3 text-4xl uppercase text-ink sm:text-5xl">
         {rule.name}
       </h2>
-      <p className="mt-1 text-sm font-medium text-accent">{rule.tagline}</p>
-      {!compact && <p className="mt-3 text-sm text-canvas-muted">{rule.description}</p>}
+      <p className="relative mt-1.5 text-sm font-medium sm:text-base" style={{ color: style.color }}>
+        {rule.tagline}
+      </p>
+      {!compact && <p className="relative mt-3 text-sm text-ink-dim">{rule.description}</p>}
+
       {extra && (
-        <p className="mt-3 inline-block rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold text-accent">
+        <p
+          className="relative mt-4 inline-block rounded-full px-3 py-1 font-data text-[10px] uppercase tracking-[0.1em]"
+          style={{
+            color: style.color,
+            backgroundColor: `color-mix(in srgb, ${style.color} 16%, transparent)`,
+          }}
+        >
           {extra}
         </p>
       )}
-    </div>
+    </article>
   );
 }

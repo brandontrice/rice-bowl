@@ -42,3 +42,6 @@ supabase/seed_allowlist.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase CLI cache (config.toml IS committed; this is not)
+supabase/.temp

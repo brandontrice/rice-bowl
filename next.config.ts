@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    // Sleeper serves player headshots and team logos on a public CDN,
+    // keyed by the same player_id we already store.
+    remotePatterns: [
+      new URL("https://sleepercdn.com/content/nfl/players/**"),
+      new URL("https://sleepercdn.com/images/team_logos/nfl/**"),
+    ],
+  },
 };
 
 export default nextConfig;

@@ -2,6 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // Cron routes authenticate with a bearer secret rather than a session
+  // cookie, so the redirect below would bounce every scheduled job to
+  // /login and silently disable them. Skip the session check entirely —
+  // it would also be a wasted round-trip on each cron invocation.
+  if (request.nextUrl.pathname.startsWith("/api/cron")) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

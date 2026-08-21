@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Panel } from "@/components/ui/Panel";
 import type { Manager, TrashTalk } from "@/types/database";
 
 export function TrashTalkBoard({
@@ -22,6 +23,7 @@ export function TrashTalkBoard({
   });
   const [draft, setDraft] = useState(messages[currentManagerId] ?? "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -42,58 +44,74 @@ export function TrashTalkBoard({
     };
   }, [weekId]);
 
+  const pinned = messages[currentManagerId] ?? "";
+  const isDirty = draft.trim() !== pinned.trim();
+
   async function save() {
     setSaving(true);
+    setError(null);
     const supabase = createClient();
-    await supabase
-      .from("trash_talk")
-      .upsert(
-        { week_id: weekId, manager_id: currentManagerId, message: draft, updated_at: new Date().toISOString() },
-        { onConflict: "week_id,manager_id" },
-      );
+    const { error: saveError } = await supabase.from("trash_talk").upsert(
+      {
+        week_id: weekId,
+        manager_id: currentManagerId,
+        message: draft,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "week_id,manager_id" },
+    );
+    if (saveError) {
+      setError("That didn't pin. Check your connection and try again.");
+      setSaving(false);
+      return;
+    }
     setMessages((prev) => ({ ...prev, [currentManagerId]: draft }));
     setSaving(false);
   }
 
   return (
-    <div className="rounded-2xl border border-canvas-border bg-canvas-card p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-canvas-muted">
-        Trash Talk
-      </h3>
-      <div className="flex flex-col gap-3">
+    <Panel title="Trash Talk" bodyClassName="flex flex-col gap-4">
+      <div className="flex flex-col gap-2.5">
         {managers.map((m) => (
-          <div key={m.id} className="rounded-xl border border-canvas-border/70 bg-canvas p-3">
-            <div className="mb-1 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: m.accent_color }} />
-              <span className="text-xs font-semibold text-canvas-fg">{m.display_name}</span>
-            </div>
-            <p className="text-sm text-canvas-muted">
-              {messages[m.id] || <span className="italic">No message pinned this week.</span>}
+          <div
+            key={m.id}
+            className="rounded-xl border-l-2 bg-ground px-3.5 py-3"
+            style={{ borderLeftColor: m.accent_color }}
+          >
+            <span className="font-data text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+              {m.display_name}
+            </span>
+            <p className="mt-1 text-sm text-ink">
+              {messages[m.id] || (
+                <span className="italic text-ink-faint">No message pinned this week.</span>
+              )}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value.slice(0, 280))}
           placeholder="Pin your one message for the week…"
+          aria-label="Your message for the week"
           rows={2}
-          className="resize-none rounded-lg border border-canvas-border bg-canvas px-3 py-2 text-sm text-canvas-fg outline-none focus:border-accent"
+          className="resize-none rounded-lg border border-seam bg-ground px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent"
         />
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-canvas-muted">{draft.length}/280</span>
+        {error && <p className="text-xs text-crimson">{error}</p>}
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-data text-[10px] text-ink-faint">{draft.length}/280</span>
           <button
             type="button"
             onClick={save}
-            disabled={saving}
-            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            disabled={saving || !isDirty}
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-ground transition hover:opacity-90 disabled:opacity-40"
           >
-            {saving ? "Pinning…" : "Pin message"}
+            {saving ? "Pinning…" : isDirty ? "Pin message" : "Pinned"}
           </button>
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

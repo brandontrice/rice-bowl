@@ -1,43 +1,183 @@
 @import "tailwindcss";
 
+/* ============================================================
+   The Rice Bowl — lacquer & ember
+   A warm, committed-dark surface. Manager accents are structural
+   (seams, score bars, roster rails) and never semantic; jade /
+   flare / crimson carry meaning on their own.
+   ============================================================ */
 :root {
-  --canvas: #16120e;
-  --canvas-card: #211a14;
-  --canvas-card-raised: #2a2119;
-  --canvas-border: #3c3025;
-  --canvas-fg: #f5efe4;
-  --canvas-muted: #a89a86;
-  --win: #5fd88a;
-  --loss: #ef6a55;
-  --accent: #e8542e;
-  --accent-a: #e8542e;
-  --accent-b: #2e7de8;
+  /* ground ramp */
+  --ground: #14100c;
+  --surface: #1c1710;
+  --surface-raised: #262019;
+  --seam: #382e24;
+  --seam-soft: #2a221a;
+
+  /* ink ramp */
+  --ink: #f7f2e7;
+  --ink-dim: #a99a85;
+  --ink-faint: #7a6c59;
+
+  /* brand */
+  --ember: #f2603a;
+  --ember-deep: #c4381a;
+
+  /* semantic — deliberately separate from the manager accents */
+  --jade: #63c98a;
+  --flare: #e8b54a;
+  --crimson: #e05753;
+
+  /* the two rivals. Overridden per-manager from the DB at render time. */
+  --mgr-a: #f2603a;
+  --mgr-b: #47a8d8;
+
+  /* `--accent` is the action colour. The matchup page re-points it at
+     whoever is currently leading, so CTAs pick up the rivalry. */
+  --accent: var(--ember);
 }
 
 @theme inline {
-  --color-canvas: var(--canvas);
-  --color-canvas-card: var(--canvas-card);
-  --color-canvas-card-raised: var(--canvas-card-raised);
-  --color-canvas-border: var(--canvas-border);
-  --color-canvas-fg: var(--canvas-fg);
-  --color-canvas-muted: var(--canvas-muted);
-  --color-win: var(--win);
-  --color-loss: var(--loss);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-seam: var(--seam);
+  --color-seam-soft: var(--seam-soft);
+
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-ember: var(--ember);
+  --color-ember-deep: var(--ember-deep);
+  --color-jade: var(--jade);
+  --color-flare: var(--flare);
+  --color-crimson: var(--crimson);
+
+  --color-mgr-a: var(--mgr-a);
+  --color-mgr-b: var(--mgr-b);
   --color-accent: var(--accent);
-  --color-accent-a: var(--accent-a);
-  --color-accent-b: var(--accent-b);
+
   --font-display: var(--font-display);
   --font-body: var(--font-body);
+  --font-data: var(--font-data);
 }
 
 body {
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--ground);
+  color: var(--ink);
 }
 
+/* Big Shoulders is a variable face — weight is what gives the app a
+   hierarchy Bebas Neue could not. Default to the heaviest cut. */
 .font-display {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display), "Arial Narrow", ui-sans-serif, sans-serif;
+  font-weight: 800;
+  line-height: 0.94;
+  letter-spacing: 0.005em;
 }
 
+/* Every number in the product. Tabular so columns of scores line up. */
+.font-data,
 .tabular-score {
+  font-family: var(--font-data), ui-monospace, SFMono-Regular, Menlo, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/* Small uppercase label used for eyebrows and slot names. */
+.label {
+  font-family: var(--font-data), ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Category colours ────────────────────────────────────────────────
+   House Rule enforcement and roster position each get a stable hue, used
+   everywhere that concept appears. After a few weeks you should be able
+   to tell "this is a scoring week" before reading a word. */
+:root {
+  --iris: #a292e6;
+
+  --pos-qb: #e8b54a;
+  --pos-rb: #63c98a;
+  --pos-wr: #47a8d8;
+  --pos-te: #c79be8;
+  --pos-dst: #a99a85;
+}
+
+@theme inline {
+  --color-iris: var(--iris);
+  --color-pos-qb: var(--pos-qb);
+  --color-pos-rb: var(--pos-rb);
+  --color-pos-wr: var(--pos-wr);
+  --color-pos-te: var(--pos-te);
+  --color-pos-dst: var(--pos-dst);
+}
+
+/* ─── The three moments ───────────────────────────────────────────────
+   A week has exactly three beats worth animating: the card being dealt,
+   a pick landing, and the lead changing hands. Everything else stays
+   still. All of it is disabled by the reduced-motion block above. */
+
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateX(-38deg) translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+.animate-deal {
+  animation: deal-in 520ms cubic-bezier(0.16, 0.84, 0.32, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes pick-land {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pick-pulse {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  35% {
+    background-color: color-mix(in srgb, var(--pulse, var(--accent)) 18%, transparent);
+  }
+}
+
+.animate-pick {
+  animation:
+    pick-land 240ms ease-out both,
+    pick-pulse 1100ms ease-out 120ms both;
 }

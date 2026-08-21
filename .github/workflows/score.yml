@@ -1,0 +1,65 @@
+name: Score live weeks
+
+# Server-side scoring on a tighter schedule than Vercel's Hobby plan
+# allows (one cron run per day). This calls the same secret-guarded
+# endpoint Vercel Cron would call — /api/cron/score does not care who
+# invokes it, only that the bearer token matches.
+#
+# This is belt-and-braces: the matchup page already refreshes itself while
+# someone is watching it. What this adds is scoring when nobody has a tab
+# open, so the standings are current the next time either manager looks.
+
+on:
+  schedule:
+    # All times UTC. The NFL plays Sunday afternoon and evening plus
+    # Thursday and Monday nights; outside those windows there is nothing
+    # to score. Running every 15 minutes around the clock would be ~2,900
+    # billed minutes a month against a 2,000-minute free allowance for
+    # private repos — these windows come to roughly 430.
+    - cron: "*/15 17-23 * * 0" # Sunday 1pm–7pm ET: early and late afternoon games
+    - cron: "*/15 0-4 * * 1" #   Sunday night — already Monday in UTC
+    - cron: "*/15 0-4 * * 2" #   Monday Night Football
+    - cron: "*/15 0-4 * * 5" #   Thursday Night Football
+  workflow_dispatch: # and on demand, for testing
+
+concurrency:
+  group: score-live-weeks
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refresh scores
+        env:
+          # Override by setting an APP_URL repository variable if the
+          # production domain ever changes.
+          APP_URL: ${{ vars.APP_URL || 'https://rice-bowl-six.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET is not set on this repository. Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          code=$(curl --silent --show-error --max-time 60 \
+            --output response.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/score")
+
+          echo "HTTP ${code} from ${APP_URL}/api/cron/score"
+          cat response.json || true
+          echo
+
+          if [ "${code}" = "401" ]; then
+            echo "::error::Rejected. The repository CRON_SECRET does not match the one set on Vercel."
+            exit 1
+          fi
+
+          if [ "${code}" != "200" ]; then
+            echo "::error::Scoring failed with HTTP ${code}."
+            exit 1
+          fi

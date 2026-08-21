@@ -1,6 +1,7 @@
 import type { DraftPick, Manager, Player, Week } from "@/types/database";
 import { rosterSlotDefs } from "@/lib/draft";
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
+import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 
 type PickWithPlayer = DraftPick & { players: Player | null };
 
@@ -35,52 +36,75 @@ export function RosterGrid({
     rule?.key !== "loyalty_clause" ||
     picks.filter((p) => p.players?.team === manager.favorite_team).length >= 2;
 
+  const scored = rows
+    .map((r) => (r.pick ? (scores.get(r.pick.player_id) ?? null) : null))
+    .filter((v): v is number => v !== null);
+  const best = scored.length > 0 ? Math.max(...scored) : null;
+
   return (
-    <div
-      className="rounded-2xl border p-4"
-      style={{
-        borderColor: isMe ? manager.accent_color : "var(--canvas-border)",
-        backgroundColor: isMe ? `${manager.accent_color}14` : "var(--canvas-card)",
-      }}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="h-6 w-6 shrink-0 rounded-full"
-            style={{ backgroundColor: manager.accent_color }}
-          />
-          <span className="font-semibold text-canvas-fg">{manager.display_name}</span>
-        </div>
-        <span className="font-display text-3xl tabular-score text-canvas-fg">
+    <section className="overflow-hidden rounded-2xl border bg-surface" style={{ borderColor: manager.accent_color }}>
+      {/* The manager's colour is the rail down the side, not a wash over the
+          whole card — a tinted background made the two rosters hard to scan. */}
+      <header className="flex items-center gap-2.5 border-b border-seam-soft px-4 py-3">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: manager.accent_color }}
+        />
+        <span className="truncate text-sm font-semibold text-ink">{manager.display_name}</span>
+        {isMe && <span className="label">You</span>}
+        <span className="tabular-score ml-auto text-2xl font-semibold text-ink">
           {totalPoints !== null ? totalPoints.toFixed(1) : "—"}
         </span>
-      </div>
+      </header>
 
-      <div className="flex flex-col divide-y divide-canvas-border/60">
-        {rows.map((row, i) => (
-          <div key={i} className="flex items-center justify-between gap-2 py-2 text-sm">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="w-10 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-canvas-muted">
-                {row.slot}
-              </span>
+      <div className="flex flex-col">
+        {rows.map((row, i) => {
+          const points = row.pick ? (scores.get(row.pick.player_id) ?? null) : null;
+          const isBest = best !== null && points === best && points > 0;
+          return (
+            <div
+              key={i}
+              className="grid grid-cols-[34px_auto_minmax(0,1fr)_auto] items-center gap-2.5 border-t border-seam-soft px-4 py-2 first:border-t-0"
+            >
+              <span className="label">{row.slot}</span>
               {row.pick?.players ? (
-                <span className="truncate text-canvas-fg">
+                <PlayerAvatar
+                  playerId={row.pick.player_id}
+                  name={row.pick.players.full_name}
+                  position={row.pick.players.position}
+                  team={row.pick.players.team}
+                  size="sm"
+                />
+              ) : (
+                <span className="h-6 w-6 rounded-lg border border-dashed border-seam" />
+              )}
+              {row.pick?.players ? (
+                <span className="truncate text-sm text-ink">
                   {row.pick.players.full_name}
-                  <span className="ml-1 text-canvas-muted">{row.pick.players.team}</span>
+                  <span className="ml-1.5 font-data text-[10px] text-ink-faint">
+                    {row.pick.players.team}
+                  </span>
                 </span>
               ) : (
-                <span className="text-canvas-muted">Empty</span>
+                <span className="text-sm text-ink-faint">Empty</span>
               )}
+              <span
+                className={`tabular-score text-sm ${isBest ? "text-jade" : "text-ink-dim"}`}
+                title={isBest ? "Top scorer on this roster" : undefined}
+              >
+                {points !== null ? points.toFixed(1) : row.pick ? "—" : ""}
+              </span>
             </div>
-            <span className="shrink-0 tabular-score text-canvas-muted">
-              {row.pick ? (scores.get(row.pick.player_id)?.toFixed(1) ?? "—") : ""}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {(rule?.key === "rookie_rule" || rule?.key === "loyalty_clause") && (
-        <p className={`mt-3 text-xs ${(rule.key === "rookie_rule" ? rookieOk : loyaltyOk) ? "text-win" : "text-loss"}`}>
+        <p
+          className={`border-t border-seam-soft px-4 py-2.5 text-xs ${
+            (rule.key === "rookie_rule" ? rookieOk : loyaltyOk) ? "text-jade" : "text-crimson"
+          }`}
+        >
           {rule.key === "rookie_rule"
             ? rookieOk
               ? "Rookie Rule satisfied."
@@ -90,6 +114,6 @@ export function RosterGrid({
               : `Loyalty Clause not met — need 2+ ${manager.favorite_team ?? "favorite team"} players.`}
         </p>
       )}
-    </div>
+    </section>
   );
 }

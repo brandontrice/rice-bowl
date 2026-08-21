@@ -18,7 +18,9 @@ type SleeperPlayer = {
   fantasy_positions?: string[] | null;
 };
 
-export async function fetchSleeperPlayerPool(): Promise<Player[]> {
+export type SleeperPoolPlayer = Omit<Player, "ppg" | "pos_rank" | "games_played">;
+
+export async function fetchSleeperPlayerPool(): Promise<SleeperPoolPlayer[]> {
   const res = await fetch(`${SLEEPER_BASE}/players/nfl`, {
     cache: "no-store",
   });
@@ -27,7 +29,7 @@ export async function fetchSleeperPlayerPool(): Promise<Player[]> {
   }
   const raw = (await res.json()) as Record<string, SleeperPlayer>;
 
-  const players: Player[] = [];
+  const players: SleeperPoolPlayer[] = [];
   for (const p of Object.values(raw)) {
     if (!p.position || !FANTASY_POSITIONS.has(p.position)) continue;
     if (!p.team) continue; // skip free agents / retired players
@@ -80,6 +82,24 @@ export async function fetchSleeperWeekStats(
   );
   if (!res.ok) {
     throw new Error(`Sleeper stats fetch failed: ${res.status}`);
+  }
+  return (await res.json()) as Record<string, SleeperStatLine>;
+}
+
+/**
+ * Season-to-date totals for every player, keyed by Sleeper player_id.
+ * Includes `gp` (games played) and `pts_half_ppr`, which is all we need
+ * to rank the draft pool by production.
+ */
+export async function fetchSleeperSeasonStats(
+  season: number,
+  seasonType: "regular" | "post" = "regular",
+): Promise<Record<string, SleeperStatLine>> {
+  const res = await fetch(`${SLEEPER_BASE}/stats/nfl/${seasonType}/${season}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Sleeper season stats fetch failed: ${res.status}`);
   }
   return (await res.json()) as Record<string, SleeperStatLine>;
 }
