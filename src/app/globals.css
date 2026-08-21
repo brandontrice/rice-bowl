@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #16120e;
+  --canvas-card: #211a14;
+  --canvas-card-raised: #2a2119;
+  --canvas-border: #3c3025;
+  --canvas-fg: #f5efe4;
+  --canvas-muted: #a89a86;
+  --win: #5fd88a;
+  --loss: #ef6a55;
+  --accent: #e8542e;
+  --accent-a: #e8542e;
+  --accent-b: #2e7de8;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-canvas-card: var(--canvas-card);
+  --color-canvas-card-raised: var(--canvas-card-raised);
+  --color-canvas-border: var(--canvas-border);
+  --color-canvas-fg: var(--canvas-fg);
+  --color-canvas-muted: var(--canvas-muted);
+  --color-win: var(--win);
+  --color-loss: var(--loss);
+  --color-accent: var(--accent);
+  --color-accent-a: var(--accent-a);
+  --color-accent-b: var(--accent-b);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+.tabular-score {
+  font-variant-numeric: tabular-nums;
+}

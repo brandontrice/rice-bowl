@@ -1,0 +1,13 @@
+-- Copy this to seed_allowlist.sql (gitignored — it'll have real emails in it),
+-- fill in the two real emails/colors/teams, and run it in the Supabase SQL
+-- Editor AFTER 0001_init.sql. Both of you then sign up at /login with these
+-- exact emails and the signup trigger will provision your `managers` row.
+
+insert into manager_allowlist (email, display_name, accent_color, favorite_team)
+values
+  ('you@example.com', 'Brandon', '#E8542E', 'KC'),
+  ('cate@example.com', 'Cate', '#2E7DE8', 'PHI')
+on conflict (email) do update set
+  display_name = excluded.display_name,
+  accent_color = excluded.accent_color,
+  favorite_team = excluded.favorite_team;
