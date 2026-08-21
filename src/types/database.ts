@@ -53,6 +53,9 @@ export type Player = {
   status: string | null;
   fantasy_positions: string[] | null;
   updated_at: string;
+  ppg: number | null;
+  pos_rank: number | null;
+  games_played: number | null;
 };
 
 export type DraftStatus = "pending" | "active" | "complete";

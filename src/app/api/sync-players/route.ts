@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { fetchSleeperPlayerPool } from "@/lib/sleeper";
+import { syncPlayers } from "@/lib/sync-players";
 
+/** Manual player-pool resync. The scheduled one is /api/cron/sync-players. */
 export async function POST() {
   const supabase = await createClient();
   const {
@@ -11,16 +12,10 @@ export async function POST() {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const players = await fetchSleeperPlayerPool();
-
-  const BATCH = 500;
-  for (let i = 0; i < players.length; i += BATCH) {
-    const batch = players.slice(i, i + BATCH);
-    const { error } = await supabase.from("players").upsert(batch, { onConflict: "id" });
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  try {
+    return NextResponse.json({ synced: await syncPlayers(supabase) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "sync failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ synced: players.length });
 }

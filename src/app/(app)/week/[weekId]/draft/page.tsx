@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentManager, getManagers } from "@/lib/data";
 import { poolRestriction } from "@/lib/draft";
-import { ensurePlayersSynced } from "@/lib/sync-players";
+import { after } from "next/server";
+import { isPlayerPoolStale, syncPlayers } from "@/lib/sync-players";
+import { createServiceClient } from "@/lib/supabase/service";
 import { DraftRoom } from "@/components/DraftRoom";
 import { Shell } from "@/components/ui/Shell";
 import type { Player, Draft, DraftPick } from "@/types/database";
@@ -35,12 +37,25 @@ export default async function DraftPage({
 
   const managers = await getManagers();
 
-  await ensurePlayersSynced(supabase);
+  // Never block the render on this. A stale cache means a multi-megabyte
+  // Sleeper fetch plus ~20 upsert batches; the manager opening the draft
+  // room would sit on a blank screen for all of it. Cron keeps the pool
+  // fresh — this is the safety net, and it runs after the response.
+  if (await isPlayerPoolStale(supabase)) {
+    after(async () => {
+      try {
+        await syncPlayers(createServiceClient());
+      } catch (error) {
+        console.error("background player sync failed", error);
+      }
+    });
+  }
 
   const { data: playersRaw } = await supabase
     .from("players")
     .select("*")
     .in("position", FANTASY_POSITIONS)
+    .order("pos_rank", { ascending: true, nullsFirst: false })
     .order("full_name", { ascending: true });
 
   const restriction = poolRestriction(week);
