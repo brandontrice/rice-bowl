@@ -214,20 +214,44 @@ vercel link --yes --project rice-bowl
 > that one line, but it is worth knowing before running it against a file
 > you care about.
 
-**Push the two new environment variables to production.** `vercel env add`
-reads the value from stdin, so it never echoes a secret into shell history:
+**Push environment variables to Vercel.** `vercel env add` takes the value
+on stdin, so the secret never lands in shell history. Two gotchas: the
+default shell here is PowerShell, which has no `printf`; and the values
+live in `.env.local`, not in your environment, so `$NAME` is empty unless
+you read the file first.
 
-```bash
-printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production
-printf '%s' "$CRON_SECRET"               | vercel env add CRON_SECRET production
+PowerShell:
+
+```powershell
+foreach ($name in 'SUPABASE_SERVICE_ROLE_KEY','CRON_SECRET') {
+  $value = (Select-String "^$name=" .env.local).Line -replace "^$name=", ''
+  foreach ($target in 'production','preview') {
+    $value | vercel env add $name $target
+  }
+}
 ```
 
-Add `preview` and `development` as extra targets if you want preview
-deploys to score too. To check what's already set:
+Git Bash, if you prefer it:
+
+```bash
+for name in SUPABASE_SERVICE_ROLE_KEY CRON_SECRET; do
+  value=$(grep "^${name}=" .env.local | cut -d= -f2-)
+  for target in production preview; do
+    printf '%s' "$value" | vercel env add "$name" "$target"
+  done
+done
+```
+
+Both are already set on this project for Production and Preview. To see
+what's there:
 
 ```bash
 vercel env ls
 ```
+
+Crons only fire on Production, but the service-role key is also used by
+the draft page's background player sync, which runs on preview deploys
+too — hence both targets.
 
 **Deploy:**
 
@@ -236,9 +260,6 @@ vercel                # preview deploy
 vercel --prod         # production
 vercel logs <url>     # tail a deployment, useful for debugging the crons
 ```
-
-Crons only run on production deploys, and only after `CRON_SECRET` is set —
-without it `verifyCronRequest` refuses every call, by design.
 
 ### Pulling env vars
 
