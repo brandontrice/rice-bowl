@@ -109,7 +109,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     <Shell
       style={leadingAccent ? ({ "--accent": leadingAccent } as React.CSSProperties) : undefined}
     >
-      <LiveScores weekId={weekId} />
+      <LiveScores weekId={weekId} live={!draftNotDone && week.status !== "complete"} />
 
       <nav className="flex items-center justify-between gap-3 text-xs">
         {prevWeek ? (

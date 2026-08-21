@@ -85,16 +85,40 @@ Set all four in the Vercel project's Environment Variables.
 
 ### 5. Scheduled jobs
 
-[`vercel.json`](vercel.json) registers two crons, which Vercel picks up on
-the next deploy:
+[`vercel.json`](vercel.json) registers two crons, picked up on the next
+production deploy:
 
 | Path | Schedule | Does |
 | --- | --- | --- |
 | `/api/cron/sync-players` | daily, 09:00 UTC | Refreshes the Sleeper pool and its points-per-game ranking |
-| `/api/cron/score` | every 15 min | Rescores unfinished weeks and finalises any that have ended |
+| `/api/cron/score` | daily, 09:30 UTC | Rescores unfinished weeks and finalises any that have ended |
 
-Scoring no longer depends on someone pressing "Refresh" — that button is
-still there, but it is now a manual nudge rather than the only path.
+**Both are daily because Vercel's Hobby plan allows exactly one run per
+day per cron.** Anything more frequent is rejected at deploy time:
+
+```
+Error: Hobby accounts are limited to daily cron jobs.
+This cron expression (*/15 * * * *) would run more than once per day.
+```
+
+Daily is the right cadence for what these two actually have to guarantee:
+the pool stays fresh, and a week gets finalised once Sleeper's
+`state.week` moves past it. Neither needs to be timely to the minute.
+
+**In-game scoring is handled by the page, not by cron.** Scores only
+matter while someone is watching them, so an open and visible matchup tab
+refreshes on a ~90-second interval; whichever manager's tab gets there
+first writes, and Realtime pushes the result to the other. Background a
+tab and it stops polling entirely. See
+[`LiveScores`](src/components/LiveScores.tsx).
+
+That leaves "Refresh" on the head-to-head as a manual nudge rather than
+the only path — which is what it was in V1.
+
+If you ever want true server-side scoring every fifteen minutes without a
+Pro plan, a scheduled GitHub Actions workflow can `curl` the same
+endpoint with `CRON_SECRET`; the route is already built for it and does
+not care who calls.
 
 ## Running locally
 
@@ -121,10 +145,11 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
    Each pick commits through the `make_pick()` function, so the draft
    can't desync under a double-submit.
 3. **Matchup (`/week/[id]`)** — the dealt card, then the head-to-head, then
-   rosters, trash talk, standings, and the wager ledger. Scores arrive on
-   their own via cron and land over Realtime for both managers at once;
-   "Refresh" is a manual nudge. The week auto-finalizes (and a Bowl Point
-   is awarded) once Sleeper's `state.week` moves past it.
+   rosters, trash talk, standings, and the wager ledger. While the tab is
+   open the page refreshes scores on its own and they land over Realtime
+   for both managers at once; "Refresh" is a manual nudge. The week
+   auto-finalizes (and a Bowl Point is awarded) once Sleeper's
+   `state.week` moves past it.
 4. **Season (`/season`)** — Bowl Point standings, current streak,
    head-to-head record by rule category, week-by-week history, and the
    full wager ledger.
