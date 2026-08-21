@@ -30,7 +30,7 @@ All three are idempotent, so re-running them is safe.
 
 Alternatively, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
 installed and the project linked, `supabase db push` applies anything not
-yet run. See [Working with migrations](#working-with-migrations) below.
+yet run. See [Command-line access](#command-line-access) below.
 
 ### 2. Seed the manager allowlist
 
@@ -140,58 +140,94 @@ V2 is where the self-hosted Postgres, the near-live scoring worker,
 historical analytics, AI draft commentary, an expanded deck, and the
 December Playoff Bowl land.
 
-## Working with migrations
+## Command-line access
 
-Right now migrations are applied by pasting SQL into the Supabase SQL
-Editor. Wiring up the CLI means new `.sql` files can be applied with one
-command instead — including by an agent working in this repo.
+Two CLIs cover everything that isn't `npm run dev`: Supabase owns the
+database, Vercel owns deploys and production environment variables.
+Neither needs a global install — `npx --yes` fetches them on demand. (The
+`--yes` matters: without it `npx` prompts, which fails in a non-interactive
+shell.)
 
-### One-time setup
+### Supabase CLI
 
-```bash
-npm install -D supabase          # or: scoop install supabase
-npx supabase login               # opens a browser, stores a token
-npx supabase link --project-ref <project-ref>
-```
-
-Two things are needed and neither is in the repo yet:
-
-1. **Project ref** — the subdomain of your Supabase URL. Given
-   `https://abcdefghijkl.supabase.co`, the ref is `abcdefghijkl`.
-2. **Database password** — the Postgres password chosen when the project
-   was created (resettable under Project Settings → Database). `link`
-   prompts for it and caches it locally.
-
-`link` writes `supabase/config.toml` and a `.temp/` directory. Commit
-`config.toml`; `.temp/` is already covered by `.gitignore`.
-
-### Day to day
+**Log in.** Opens a browser and stores a token in your user profile, so
+this is a one-time thing per machine:
 
 ```bash
-npx supabase db push          # apply migrations the remote hasn't run
-npx supabase migration list   # show local vs remote state
-npx supabase db diff -f name  # capture dashboard changes as a migration
+npx --yes supabase@latest login
 ```
 
-### For non-interactive / agent use
-
-`supabase login` needs a browser, and `link` prompts for the password —
-neither works unattended. To allow both without a prompt, set:
-
-```
-SUPABASE_ACCESS_TOKEN=sbp_...    # Account → Access Tokens
-SUPABASE_DB_PASSWORD=...         # the Postgres password
-```
-
-With those exported, `supabase link --project-ref <ref>` and
-`supabase db push` run without interaction. Treat `SUPABASE_ACCESS_TOKEN`
-as a full-account credential — it is not scoped to one project, so prefer
-a token you can revoke.
-
-The alternative, if you would rather not hand over an account token: a
-direct connection string (Project Settings → Database → Connection
-string, "URI") used with `psql`, which is scoped to just this database:
+**Link this repo to the project.** The ref is the subdomain of
+`NEXT_PUBLIC_SUPABASE_URL` — for `https://bsnsivjuajvwnsipeggf.supabase.co`
+it's `bsnsivjuajvwnsipeggf`:
 
 ```bash
-psql "$SUPABASE_DB_URL" -f supabase/migrations/0003_atomic_pick_and_indexes.sql
+npx --yes supabase@latest link --project-ref bsnsivjuajvwnsipeggf
+```
+
+It prompts for the database password — the Postgres password set when the
+project was created, resettable under Project Settings → Database. `link`
+writes `supabase/config.toml`, which should be committed, and a
+`supabase/.temp/` cache, which should not.
+
+**Day to day:**
+
+```bash
+npx --yes supabase@latest migration list   # local vs remote state
+npx --yes supabase@latest db push          # apply anything not yet run
+npx --yes supabase@latest db diff -f name  # capture dashboard edits as a migration
+```
+
+`db push` is the one that matters here — it applies
+`0003_atomic_pick_and_indexes.sql` without pasting anything into the SQL
+Editor.
+
+### Vercel CLI
+
+Already installed globally and already authenticated as `brandontrice`;
+this repo is linked to the `rice-bowl` project, so `.vercel/project.json`
+exists locally (gitignored). If you ever need to redo it:
+
+```bash
+vercel login
+vercel link --yes --project rice-bowl
+```
+
+> `vercel link` appends `VERCEL_OIDC_TOKEN` to `.env.local`. It only adds
+> that one line, but it is worth knowing before running it against a file
+> you care about.
+
+**Push the two new environment variables to production.** `vercel env add`
+reads the value from stdin, so it never echoes a secret into shell history:
+
+```bash
+printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | vercel env add SUPABASE_SERVICE_ROLE_KEY production
+printf '%s' "$CRON_SECRET"               | vercel env add CRON_SECRET production
+```
+
+Add `preview` and `development` as extra targets if you want preview
+deploys to score too. To check what's already set:
+
+```bash
+vercel env ls
+```
+
+**Deploy:**
+
+```bash
+vercel                # preview deploy
+vercel --prod         # production
+vercel logs <url>     # tail a deployment, useful for debugging the crons
+```
+
+Crons only run on production deploys, and only after `CRON_SECRET` is set —
+without it `verifyCronRequest` refuses every call, by design.
+
+### Pulling env vars
+
+`vercel env pull` **overwrites `.env.local`**. If you use it, write
+somewhere else and merge by hand:
+
+```bash
+vercel env pull .env.vercel
 ```
