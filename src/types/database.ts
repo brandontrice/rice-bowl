@@ -66,6 +66,8 @@ export type Draft = {
   status: DraftStatus;
   draft_order: string[];
   current_pick: number;
+  deadline_at: string | null;
+  pick_seconds: number;
   created_at: string;
 };
 

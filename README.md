@@ -25,12 +25,13 @@ in the Supabase SQL Editor:
 | `0001_init.sql` | Every table, RLS policy, the auth-provisioning trigger, Realtime on the draft/trash-talk tables |
 | `0002_allowlist_read.sql` | Read access to `manager_allowlist` for the waiting room |
 | `0003_atomic_pick_and_indexes.sql` | The `make_pick()` locking function, week-scoped indexes, Realtime on `weekly_scores`, and the `ppg`/`pos_rank` columns the draft board ranks by |
+| `0004_pick_clock.sql` | `drafts.deadline_at` / `pick_seconds`, the `arm_draft_clock()` and `auto_pick()` functions, and `make_pick()` redefined to roll the clock forward |
 
-Only `0003` is safe to re-run: it guards every statement with `if not
-exists` or a `do` block. `0001` and `0002` are not — between them they
-have 21 bare `create policy` statements, a `create trigger`, and several
-`alter publication ... add table`, all of which error if the object is
-already there.
+Only `0003` and `0004` are safe to re-run: they guard every statement with
+`if not exists`, a `do` block, or `create or replace`. `0001` and `0002`
+are not — between them they have 21 bare `create policy` statements, a
+`create trigger`, and several `alter publication ... add table`, all of
+which error if the object is already there.
 
 This matters if you adopt the CLI after applying anything by hand. The
 CLI tracks what it has run in `supabase_migrations.schema_migrations`,
@@ -213,7 +214,8 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
    Division Lockdown), change a slot's eligibility (Flex Flip), hide the
    opponent's board (Blind Draft), or add a pre-draft action (Sniper).
    Each pick commits through the `make_pick()` function, so the draft
-   can't desync under a double-submit.
+   can't desync under a double-submit. An optional pick clock auto-drafts
+   the best available player on expiry — see [The pick clock](#the-pick-clock).
 3. **Matchup (`/week/[id]`)** — the dealt card, then the head-to-head, then
    rosters, trash talk, standings, and the wager ledger. While the tab is
    open the page refreshes scores on its own and they land over Realtime
@@ -233,13 +235,31 @@ The full deck (with which are auto-enforced vs. honor-system) lives in
 [`src/lib/scoring.ts`](src/lib/scoring.ts); draft-pool/roster logic is in
 [`src/lib/draft.ts`](src/lib/draft.ts).
 
-## Still not in v1
+## The pick clock
 
-A **pick timer** — the draft board has room for one, and
-`drafts.deadline_at` plus the existing Realtime channel would carry it,
-but it needs a rules decision first: what happens when the clock hits
-zero? Auto-draft the top-ranked eligible player, or just let it run red?
-That's a league call, not a code one.
+Off by default. There is no scheduled draft time in this league, so a
+clock running from the moment a week is dealt would auto-draft an absent
+manager's entire roster overnight. Either manager arms it from the draft
+room — 60, 90, 120, or 180 seconds a pick — when they are both actually at
+the board. Once armed it cannot be stopped, and every pick resets it.
+
+When a deadline passes, the manager on the clock is given the **highest
+points-per-game player still available** who is allowed by the week's
+House Rule and fits a roster slot they have not filled. "Still available"
+and "fits a slot" both matter: it will not hand you a third running back,
+and under Division Lockdown it stays inside the locked division.
+
+Enforcement is in Postgres, not the browser. `auto_pick()` refuses while
+time remains, so neither manager can force the other's pick early, and it
+runs under the same row lock as `make_pick()`, so two browsers racing the
+same expiry produce one pick rather than two. Either manager's tab may
+fire it — the one on the clock tries immediately, the opponent's waits
+three seconds and acts only as a fallback for when the on-clock manager
+has closed their tab. If nobody has a tab open, nothing happens until
+somebody does; the clock is a convenience for a live draft, not a
+background job.
+
+## Still not in v1
 
 Near-live in-game scoring (Sleeper posts stats after games, not during),
 and anything needing real-time team records or the broadcast schedule —
