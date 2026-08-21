@@ -20,16 +20,16 @@ export function RefreshScoresButton({ weekId }: { weekId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <span className="flex items-center gap-2">
       <button
         type="button"
         onClick={refresh}
         disabled={pending}
-        className="rounded-lg border border-seam px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent disabled:opacity-50"
+        className="rounded-full border border-seam px-2.5 py-1 font-data text-[10px] uppercase tracking-[0.1em] text-ink-dim transition-colors hover:border-accent hover:text-ink disabled:opacity-50"
       >
-        {pending ? "Refreshing…" : "Refresh scores"}
+        {pending ? "Refreshing…" : "Refresh"}
       </button>
       {error && <span className="text-xs text-crimson">{error}</span>}
-    </div>
+    </span>
   );
 }

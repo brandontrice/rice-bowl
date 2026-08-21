@@ -1,30 +1,46 @@
+import { HeadToHead } from "@/components/HeadToHead";
 import type { Manager } from "@/types/database";
 
+/** Bowl Points as a scoreboard rather than a two-row list. */
 export function BowlStandings({
   managers,
   standings,
+  weeksPlayed,
+  streak,
+  meta,
 }: {
   managers: Manager[];
   standings: Map<string, number>;
+  weeksPlayed?: number;
+  streak?: { manager: Manager; count: number } | null;
+  meta?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-seam bg-surface p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-dim">
-        Bowl Point Standings
-      </h3>
-      <div className="flex flex-col gap-2">
-        {managers.map((m) => (
-          <div key={m.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: m.accent_color }} />
-              <span className="text-sm text-ink">{m.display_name}</span>
-            </div>
-            <span className="font-display text-2xl tabular-score text-ink">
-              {standings.get(m.id) ?? 0}
+    <HeadToHead
+      managers={managers}
+      values={standings}
+      unit="Bowl points"
+      digits={0}
+      meta={meta}
+      footNote={
+        weeksPlayed === undefined ? undefined : (
+          <>
+            <span>
+              {streak && streak.count > 1 ? (
+                <>
+                  {streak.manager.display_name} has won{" "}
+                  <strong className="font-semibold text-ink">{streak.count} straight</strong>
+                </>
+              ) : (
+                "Every completed week is worth one Bowl Point."
+              )}
             </span>
-          </div>
-        ))}
-      </div>
-    </div>
+            <span className="font-data text-[11px] text-ink-faint">
+              {weeksPlayed} {weeksPlayed === 1 ? "week" : "weeks"} played
+            </span>
+          </>
+        )
+      }
+    />
   );
 }

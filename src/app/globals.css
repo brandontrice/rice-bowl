@@ -110,3 +110,26 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Category colours ────────────────────────────────────────────────
+   House Rule enforcement and roster position each get a stable hue, used
+   everywhere that concept appears. After a few weeks you should be able
+   to tell "this is a scoring week" before reading a word. */
+:root {
+  --iris: #a292e6;
+
+  --pos-qb: #e8b54a;
+  --pos-rb: #63c98a;
+  --pos-wr: #47a8d8;
+  --pos-te: #c79be8;
+  --pos-dst: #a99a85;
+}
+
+@theme inline {
+  --color-iris: var(--iris);
+  --color-pos-qb: var(--pos-qb);
+  --color-pos-rb: var(--pos-rb);
+  --color-pos-wr: var(--pos-wr);
+  --color-pos-te: var(--pos-te);
+  --color-pos-dst: var(--pos-dst);
+}

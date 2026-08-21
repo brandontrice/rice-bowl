@@ -9,14 +9,19 @@ const WIDTHS = {
 export function Shell({
   width = "reading",
   className,
+  style,
   children,
 }: {
   width?: keyof typeof WIDTHS;
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   return (
-    <div className={clsx("mx-auto flex w-full flex-col gap-6", WIDTHS[width], className)}>
+    <div
+      className={clsx("mx-auto flex w-full flex-col gap-6", WIDTHS[width], className)}
+      style={style}
+    >
       {children}
     </div>
   );
