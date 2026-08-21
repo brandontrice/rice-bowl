@@ -148,15 +148,15 @@ export function DraftRoom({
 
       {canSnipe && (
         <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4">
-          <p className="text-sm font-semibold text-canvas-fg">You&apos;re the Sniper.</p>
-          <p className="mt-1 text-xs text-canvas-muted">
+          <p className="text-sm font-semibold text-ink">You&apos;re the Sniper.</p>
+          <p className="mt-1 text-xs text-ink-dim">
             Steal the first pick of one round from your opponent, before the draft starts.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <select
               value={sniperRound}
               onChange={(e) => setSniperRound(Number(e.target.value))}
-              className="rounded-lg border border-canvas-border bg-canvas px-2 py-1.5 text-sm text-canvas-fg"
+              className="rounded-lg border border-seam bg-ground px-2 py-1.5 text-sm text-ink"
             >
               {Array.from({ length: TOTAL_ROSTER_SIZE }, (_, i) => i + 1).map((r) => (
                 <option key={r} value={r}>
@@ -176,15 +176,15 @@ export function DraftRoom({
         </div>
       )}
 
-      <div className="rounded-2xl border border-canvas-border bg-canvas-card p-4 text-center">
+      <div className="rounded-2xl border border-seam bg-surface p-4 text-center">
         {draft.status === "complete" ? (
-          <p className="font-display text-2xl uppercase text-canvas-fg">Draft complete</p>
+          <p className="font-display text-2xl uppercase text-ink">Draft complete</p>
         ) : (
           <>
-            <p className="text-xs uppercase tracking-wide text-canvas-muted">
+            <p className="text-xs uppercase tracking-wide text-ink-dim">
               Round {currentRound} · Pick {draft.current_pick + 1}
             </p>
-            <p className="font-display text-3xl uppercase text-canvas-fg">
+            <p className="font-display text-3xl uppercase text-ink">
               {isMyTurn ? "You're on the clock" : `Waiting on ${managerById.get(onTheClock ?? "")?.display_name ?? "…"}`}
             </p>
           </>
@@ -194,7 +194,7 @@ export function DraftRoom({
         )}
       </div>
 
-      {error && <p className="text-sm text-loss">{error}</p>}
+      {error && <p className="text-sm text-crimson">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <RosterColumn
@@ -224,7 +224,7 @@ export function DraftRoom({
                 className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${
                   positionTab === tab
                     ? "border-accent bg-accent text-white"
-                    : "border-canvas-border text-canvas-muted hover:text-canvas-fg"
+                    : "border-seam text-ink-dim hover:text-ink"
                 }`}
               >
                 {tab}
@@ -235,12 +235,12 @@ export function DraftRoom({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search players…"
-            className="rounded-lg border border-canvas-border bg-canvas-card px-3 py-2 text-sm text-canvas-fg outline-none focus:border-accent"
+            className="rounded-lg border border-seam bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
           />
 
-          <div className="flex flex-col divide-y divide-canvas-border/60 rounded-2xl border border-canvas-border bg-canvas-card">
+          <div className="flex flex-col divide-y divide-seam/60 rounded-2xl border border-seam bg-surface">
             {filtered.length === 0 && (
-              <p className="p-4 text-center text-sm text-canvas-muted">No players match.</p>
+              <p className="p-4 text-center text-sm text-ink-dim">No players match.</p>
             )}
             {filtered.map((p) => {
               const openSlot = hasOpenSlotFor(p.position, myPicks, slotDefs);
@@ -248,8 +248,8 @@ export function DraftRoom({
               return (
                 <div key={p.id} className="flex items-center justify-between gap-2 p-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-canvas-fg">{p.full_name}</p>
-                    <p className="text-xs text-canvas-muted">
+                    <p className="truncate text-sm text-ink">{p.full_name}</p>
+                    <p className="text-xs text-ink-dim">
                       {p.position} · {p.team}
                       {typeof p.years_exp === "number" ? ` · ${p.years_exp === 0 ? "Rookie" : `${p.years_exp}y exp`}` : ""}
                     </p>
@@ -305,25 +305,25 @@ function RosterColumn({
   return (
     <div
       className="rounded-2xl border p-3"
-      style={{ borderColor: manager?.accent_color ?? "var(--canvas-border)" }}
+      style={{ borderColor: manager?.accent_color ?? "var(--seam)" }}
     >
       <div className="mb-2 flex items-center gap-2">
         {manager && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: manager.accent_color }} />}
-        <span className="text-sm font-semibold text-canvas-fg">{title}</span>
-        <span className="ml-auto text-xs text-canvas-muted">{picks.length}/{slotDefs.reduce((a, d) => a + d.count, 0)}</span>
+        <span className="text-sm font-semibold text-ink">{title}</span>
+        <span className="ml-auto text-xs text-ink-dim">{picks.length}/{slotDefs.reduce((a, d) => a + d.count, 0)}</span>
       </div>
-      <div className="flex flex-col divide-y divide-canvas-border/60 text-xs">
+      <div className="flex flex-col divide-y divide-seam/60 text-xs">
         {rows.map((row, i) => (
           <div key={i} className="flex items-center justify-between py-1.5">
-            <span className="w-9 shrink-0 font-semibold uppercase text-canvas-muted">{row.slot}</span>
+            <span className="w-9 shrink-0 font-semibold uppercase text-ink-dim">{row.slot}</span>
             {hidden && row.pick ? (
-              <span className="italic text-canvas-muted">Hidden pick</span>
+              <span className="italic text-ink-dim">Hidden pick</span>
             ) : row.pick?.players ? (
-              <span className="truncate text-canvas-fg">
-                {row.pick.players.full_name} <span className="text-canvas-muted">{row.pick.players.team}</span>
+              <span className="truncate text-ink">
+                {row.pick.players.full_name} <span className="text-ink-dim">{row.pick.players.team}</span>
               </span>
             ) : (
-              <span className="text-canvas-muted">—</span>
+              <span className="text-ink-dim">—</span>
             )}
           </div>
         ))}

@@ -11,8 +11,8 @@ export default async function Home() {
   if (!manager) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <h1 className="font-display text-4xl uppercase text-canvas-fg">Not on the roster</h1>
-        <p className="max-w-sm text-sm text-canvas-muted">
+        <h1 className="font-display text-4xl uppercase text-ink">Not on the roster</h1>
+        <p className="max-w-sm text-sm text-ink-dim">
           You&apos;re signed in, but this email isn&apos;t on the league&apos;s manager allowlist yet.
           Add it in Supabase (manager_allowlist) and sign in again.
         </p>
@@ -26,10 +26,10 @@ export default async function Home() {
     const allowlist = await getManagerAllowlist();
     return (
       <WaitingRoom>
-        <div className="flex flex-col gap-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <h1 className="font-display text-4xl uppercase text-canvas-fg">Hang tight</h1>
-            <p className="max-w-sm text-sm text-canvas-muted">
+            <h1 className="font-display text-4xl uppercase text-ink">Hang tight</h1>
+            <p className="max-w-sm text-sm text-ink-dim">
               The league starts as soon as both managers have signed up. This page updates itself —
               no need to refresh.
             </p>
@@ -47,8 +47,8 @@ export default async function Home() {
   if (!result.week) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <h1 className="font-display text-4xl uppercase text-canvas-fg">Hang tight</h1>
-        <p className="max-w-sm text-sm text-canvas-muted">{result.error}</p>
+        <h1 className="font-display text-4xl uppercase text-ink">Hang tight</h1>
+        <p className="max-w-sm text-sm text-ink-dim">{result.error}</p>
       </div>
     );
   }

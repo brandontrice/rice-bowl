@@ -18,7 +18,7 @@ export function ManagerBadge({
       >
         {initial}
       </div>
-      <span className="font-medium text-canvas-fg">{manager.display_name}</span>
+      <span className="font-medium text-ink">{manager.display_name}</span>
     </div>
   );
 }

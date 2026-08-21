@@ -39,8 +39,8 @@ export function RosterGrid({
     <div
       className="rounded-2xl border p-4"
       style={{
-        borderColor: isMe ? manager.accent_color : "var(--canvas-border)",
-        backgroundColor: isMe ? `${manager.accent_color}14` : "var(--canvas-card)",
+        borderColor: isMe ? manager.accent_color : "var(--seam)",
+        backgroundColor: isMe ? `${manager.accent_color}14` : "var(--surface)",
       }}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -49,30 +49,30 @@ export function RosterGrid({
             className="h-6 w-6 shrink-0 rounded-full"
             style={{ backgroundColor: manager.accent_color }}
           />
-          <span className="font-semibold text-canvas-fg">{manager.display_name}</span>
+          <span className="font-semibold text-ink">{manager.display_name}</span>
         </div>
-        <span className="font-display text-3xl tabular-score text-canvas-fg">
+        <span className="font-display text-3xl tabular-score text-ink">
           {totalPoints !== null ? totalPoints.toFixed(1) : "—"}
         </span>
       </div>
 
-      <div className="flex flex-col divide-y divide-canvas-border/60">
+      <div className="flex flex-col divide-y divide-seam/60">
         {rows.map((row, i) => (
           <div key={i} className="flex items-center justify-between gap-2 py-2 text-sm">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="w-10 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-canvas-muted">
+              <span className="w-10 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink-dim">
                 {row.slot}
               </span>
               {row.pick?.players ? (
-                <span className="truncate text-canvas-fg">
+                <span className="truncate text-ink">
                   {row.pick.players.full_name}
-                  <span className="ml-1 text-canvas-muted">{row.pick.players.team}</span>
+                  <span className="ml-1 text-ink-dim">{row.pick.players.team}</span>
                 </span>
               ) : (
-                <span className="text-canvas-muted">Empty</span>
+                <span className="text-ink-dim">Empty</span>
               )}
             </div>
-            <span className="shrink-0 tabular-score text-canvas-muted">
+            <span className="shrink-0 tabular-score text-ink-dim">
               {row.pick ? (scores.get(row.pick.player_id)?.toFixed(1) ?? "—") : ""}
             </span>
           </div>
@@ -80,7 +80,7 @@ export function RosterGrid({
       </div>
 
       {(rule?.key === "rookie_rule" || rule?.key === "loyalty_clause") && (
-        <p className={`mt-3 text-xs ${(rule.key === "rookie_rule" ? rookieOk : loyaltyOk) ? "text-win" : "text-loss"}`}>
+        <p className={`mt-3 text-xs ${(rule.key === "rookie_rule" ? rookieOk : loyaltyOk) ? "text-jade" : "text-crimson"}`}>
           {rule.key === "rookie_rule"
             ? rookieOk
               ? "Rookie Rule satisfied."

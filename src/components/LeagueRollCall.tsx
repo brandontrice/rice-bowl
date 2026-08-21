@@ -12,8 +12,8 @@ export function LeagueRollCall({
   const managerByEmail = new Map(managers.map((m) => [m.email, m]));
 
   return (
-    <div className="rounded-2xl border border-canvas-border bg-canvas-card p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-canvas-muted">
+    <div className="rounded-2xl border border-seam bg-surface p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-dim">
         The League
       </h3>
       <div className="flex flex-col gap-2">
@@ -23,27 +23,27 @@ export function LeagueRollCall({
             return (
               <div
                 key={entry.email}
-                className="flex items-center gap-3 rounded-xl border border-canvas-border/70 bg-canvas p-3"
+                className="flex items-center gap-3 rounded-xl border border-seam/70 bg-ground p-3"
               >
                 <span
                   className="h-3 w-3 shrink-0 rounded-full"
                   style={{ backgroundColor: manager.accent_color }}
                 />
-                <span className="text-sm font-semibold text-canvas-fg">{manager.display_name}</span>
-                <span className="ml-auto text-xs font-medium text-win">Confirmed</span>
+                <span className="text-sm font-semibold text-ink">{manager.display_name}</span>
+                <span className="ml-auto text-xs font-medium text-jade">Confirmed</span>
               </div>
             );
           }
           return (
             <div
               key={entry.email}
-              className="flex flex-col gap-2 rounded-xl border border-dashed border-canvas-border/70 bg-canvas p-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-xl border border-dashed border-seam/70 bg-ground p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-center gap-3">
-                <span className="h-3 w-3 shrink-0 rounded-full border border-canvas-muted" />
+                <span className="h-3 w-3 shrink-0 rounded-full border border-ink-dim" />
                 <div>
-                  <p className="text-sm font-semibold text-canvas-fg">{entry.display_name}</p>
-                  <p className="text-xs text-canvas-muted">{entry.email}</p>
+                  <p className="text-sm font-semibold text-ink">{entry.display_name}</p>
+                  <p className="text-xs text-ink-dim">{entry.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 pl-6 sm:pl-0">

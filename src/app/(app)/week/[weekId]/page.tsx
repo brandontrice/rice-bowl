@@ -83,22 +83,22 @@ export default async function WeekPage({
 
   return (
     <div
-      className="flex flex-col gap-6"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-6"
       style={leadingAccent ? ({ "--accent": leadingAccent } as React.CSSProperties) : undefined}
     >
-      <div className="flex items-center justify-between text-xs text-canvas-muted">
+      <div className="flex items-center justify-between text-xs text-ink-dim">
         {prevWeek ? (
-          <Link href={`/week/${prevWeek.id}`} className="hover:text-canvas-fg">
+          <Link href={`/week/${prevWeek.id}`} className="hover:text-ink">
             ← Week {prevWeek.week_number}
           </Link>
         ) : (
           <span />
         )}
-        <span className="font-display text-lg uppercase tracking-wide text-canvas-fg">
+        <span className="font-display text-lg uppercase tracking-wide text-ink">
           Week {week.week_number}
         </span>
         {nextWeek ? (
-          <Link href={`/week/${nextWeek.id}`} className="hover:text-canvas-fg">
+          <Link href={`/week/${nextWeek.id}`} className="hover:text-ink">
             Week {nextWeek.week_number} →
           </Link>
         ) : (
@@ -109,8 +109,8 @@ export default async function WeekPage({
       <HouseRuleCard week={week} sniperManager={sniperManager} />
 
       {draftNotDone ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-canvas-border p-8 text-center">
-          <p className="text-sm text-canvas-muted">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-seam p-8 text-center">
+          <p className="text-sm text-ink-dim">
             {draftRow?.status === "active" ? "The draft is underway." : "The draft hasn't started yet."}
           </p>
           <Link

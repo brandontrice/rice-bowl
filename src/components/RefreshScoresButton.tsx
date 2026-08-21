@@ -25,11 +25,11 @@ export function RefreshScoresButton({ weekId }: { weekId: string }) {
         type="button"
         onClick={refresh}
         disabled={pending}
-        className="rounded-lg border border-canvas-border px-3 py-1.5 text-xs font-semibold text-canvas-fg hover:border-accent disabled:opacity-50"
+        className="rounded-lg border border-seam px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent disabled:opacity-50"
       >
         {pending ? "Refreshing…" : "Refresh scores"}
       </button>
-      {error && <span className="text-xs text-loss">{error}</span>}
+      {error && <span className="text-xs text-crimson">{error}</span>}
     </div>
   );
 }

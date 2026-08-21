@@ -54,17 +54,17 @@ export default function LoginPage() {
     <div className="flex min-h-svh flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <h1 className="font-display text-5xl uppercase tracking-tight text-canvas-fg">
+          <h1 className="font-display text-5xl uppercase tracking-tight text-ink">
             The Rice Bowl
           </h1>
-          <p className="mt-2 text-sm text-canvas-muted">
+          <p className="mt-2 text-sm text-ink-dim">
             Same two managers. Never the same team twice.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-canvas-muted">
+            <label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-ink-dim">
               Email
             </label>
             <input
@@ -74,11 +74,11 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-canvas-border bg-canvas-card px-3 py-2.5 text-canvas-fg outline-none focus:border-accent"
+              className="rounded-lg border border-seam bg-surface px-3 py-2.5 text-ink outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-xs font-medium uppercase tracking-wide text-canvas-muted">
+            <label htmlFor="password" className="text-xs font-medium uppercase tracking-wide text-ink-dim">
               Password
             </label>
             <input
@@ -89,12 +89,12 @@ export default function LoginPage() {
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-lg border border-canvas-border bg-canvas-card px-3 py-2.5 text-canvas-fg outline-none focus:border-accent"
+              className="rounded-lg border border-seam bg-surface px-3 py-2.5 text-ink outline-none focus:border-accent"
             />
           </div>
 
-          {error && <p className="text-sm text-loss">{error}</p>}
-          {notice && <p className="text-sm text-win">{notice}</p>}
+          {error && <p className="text-sm text-crimson">{error}</p>}
+          {notice && <p className="text-sm text-jade">{notice}</p>}
 
           <button
             type="submit"
@@ -112,7 +112,7 @@ export default function LoginPage() {
             setError(null);
             setNotice(null);
           }}
-          className="mt-6 w-full text-center text-sm text-canvas-muted hover:text-canvas-fg"
+          className="mt-6 w-full text-center text-sm text-ink-dim hover:text-ink"
         >
           {mode === "sign-in" ? "First time here? Sign up" : "Already have an account? Sign in"}
         </button>

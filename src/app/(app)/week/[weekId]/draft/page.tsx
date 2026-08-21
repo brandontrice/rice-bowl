@@ -4,6 +4,7 @@ import { getCurrentManager, getManagers } from "@/lib/data";
 import { poolRestriction } from "@/lib/draft";
 import { ensurePlayersSynced } from "@/lib/sync-players";
 import { DraftRoom } from "@/components/DraftRoom";
+import { Shell } from "@/components/ui/Shell";
 import type { Player, Draft, DraftPick } from "@/types/database";
 
 const FANTASY_POSITIONS = ["QB", "RB", "WR", "TE", "DEF"];
@@ -52,14 +53,16 @@ export default async function DraftPage({
     .order("pick_number", { ascending: true });
 
   return (
-    <DraftRoom
-      week={week}
-      draft={draftRow}
-      managers={managers}
-      currentManagerId={currentManager.id}
-      players={players}
-      initialPicks={(picks ?? []) as (DraftPick & { players: Player | null })[]}
-      poolRestrictionReason={restriction.reason}
-    />
+    <Shell width="wide">
+      <DraftRoom
+        week={week}
+        draft={draftRow}
+        managers={managers}
+        currentManagerId={currentManager.id}
+        players={players}
+        initialPicks={(picks ?? []) as (DraftPick & { players: Player | null })[]}
+        poolRestrictionReason={restriction.reason}
+      />
+    </Shell>
   );
 }

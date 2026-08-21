@@ -17,7 +17,7 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
           // clipboard permission denied — silently no-op, the value is still visible to copy by hand
         }
       }}
-      className="shrink-0 rounded-lg border border-canvas-border px-2.5 py-1 text-xs font-semibold text-canvas-muted hover:border-accent hover:text-canvas-fg"
+      className="shrink-0 rounded-lg border border-seam px-2.5 py-1 text-xs font-semibold text-ink-dim hover:border-accent hover:text-ink"
     >
       {copied ? "Copied!" : label}
     </button>

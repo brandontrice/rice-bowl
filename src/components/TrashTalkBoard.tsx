@@ -56,18 +56,18 @@ export function TrashTalkBoard({
   }
 
   return (
-    <div className="rounded-2xl border border-canvas-border bg-canvas-card p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-canvas-muted">
+    <div className="rounded-2xl border border-seam bg-surface p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-dim">
         Trash Talk
       </h3>
       <div className="flex flex-col gap-3">
         {managers.map((m) => (
-          <div key={m.id} className="rounded-xl border border-canvas-border/70 bg-canvas p-3">
+          <div key={m.id} className="rounded-xl border border-seam/70 bg-ground p-3">
             <div className="mb-1 flex items-center gap-2">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: m.accent_color }} />
-              <span className="text-xs font-semibold text-canvas-fg">{m.display_name}</span>
+              <span className="text-xs font-semibold text-ink">{m.display_name}</span>
             </div>
-            <p className="text-sm text-canvas-muted">
+            <p className="text-sm text-ink-dim">
               {messages[m.id] || <span className="italic">No message pinned this week.</span>}
             </p>
           </div>
@@ -80,10 +80,10 @@ export function TrashTalkBoard({
           onChange={(e) => setDraft(e.target.value.slice(0, 280))}
           placeholder="Pin your one message for the week…"
           rows={2}
-          className="resize-none rounded-lg border border-canvas-border bg-canvas px-3 py-2 text-sm text-canvas-fg outline-none focus:border-accent"
+          className="resize-none rounded-lg border border-seam bg-ground px-3 py-2 text-sm text-ink outline-none focus:border-accent"
         />
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-canvas-muted">{draft.length}/280</span>
+          <span className="text-[10px] text-ink-dim">{draft.length}/280</span>
           <button
             type="button"
             onClick={save}

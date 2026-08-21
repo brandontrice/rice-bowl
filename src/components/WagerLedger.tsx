@@ -49,25 +49,25 @@ export function WagerLedger({
   }
 
   return (
-    <div className="rounded-2xl border border-canvas-border bg-canvas-card p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-canvas-muted">
+    <div className="rounded-2xl border border-seam bg-surface p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-ink-dim">
         Wager Ledger
       </h3>
 
-      {wagers.length === 0 && <p className="text-sm text-canvas-muted">No wagers logged yet.</p>}
+      {wagers.length === 0 && <p className="text-sm text-ink-dim">No wagers logged yet.</p>}
 
       <div className="flex flex-col gap-2">
         {wagers.map((w) => (
-          <div key={w.id} className="rounded-xl border border-canvas-border/70 bg-canvas p-3 text-sm">
+          <div key={w.id} className="rounded-xl border border-seam/70 bg-ground p-3 text-sm">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-canvas-fg">
+              <p className="text-ink">
                 {showWeekColumn && w.week_number ? (
-                  <span className="mr-2 text-xs text-canvas-muted">Wk {w.week_number}</span>
+                  <span className="mr-2 text-xs text-ink-dim">Wk {w.week_number}</span>
                 ) : null}
                 {w.description}
               </p>
               {w.status === "settled" ? (
-                <span className="shrink-0 text-xs text-canvas-muted">
+                <span className="shrink-0 text-xs text-ink-dim">
                   {w.loser_manager_id ? `${managerById.get(w.loser_manager_id)?.display_name} pays up` : "Settled"}
                 </span>
               ) : null}
@@ -79,7 +79,7 @@ export function WagerLedger({
                     key={m.id}
                     type="button"
                     onClick={() => settle(w.id, m.id)}
-                    className="rounded-full border border-canvas-border px-2.5 py-1 text-xs text-canvas-muted hover:border-accent hover:text-canvas-fg"
+                    className="rounded-full border border-seam px-2.5 py-1 text-xs text-ink-dim hover:border-accent hover:text-ink"
                   >
                     {m.display_name} loses
                   </button>
@@ -95,7 +95,7 @@ export function WagerLedger({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Loser cooks dinner…"
-          className="flex-1 rounded-lg border border-canvas-border bg-canvas px-3 py-2 text-sm text-canvas-fg outline-none focus:border-accent"
+          className="flex-1 rounded-lg border border-seam bg-ground px-3 py-2 text-sm text-ink outline-none focus:border-accent"
         />
         <button
           type="button"

@@ -1,32 +1,49 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Work_Sans } from "next/font/google";
+import { Big_Shoulders, Instrument_Sans, Chivo_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Bebas_Neue({
+/* Variable display face. Bebas Neue had a single weight, which is why
+   nothing in the app could be emphasised; this gives us 100–900. */
+const display = Big_Shoulders({
   variable: "--font-display",
-  weight: "400",
+  fallback: ["Arial Narrow", "Haettenschweiler", "sans-serif"],
   subsets: ["latin"],
 });
 
-const body = Work_Sans({
+const body = Instrument_Sans({
   variable: "--font-body",
+  fallback: ["system-ui", "sans-serif"],
+  subsets: ["latin"],
+});
+
+/* Every number in the product: scores, pick counts, the ledger. */
+const data = Chivo_Mono({
+  variable: "--font-data",
+  fallback: ["ui-monospace", "SFMono-Regular", "monospace"],
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "The Rice Bowl",
+  title: {
+    default: "The Rice Bowl",
+    template: "%s · The Rice Bowl",
+  },
   description: "A permanent-rivalry fantasy matchup, redrafted every week.",
+  applicationName: "The Rice Bowl",
+  openGraph: {
+    title: "The Rice Bowl",
+    description: "A permanent-rivalry fantasy matchup, redrafted every week.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${data.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-canvas text-canvas-fg">
-        {children}
-      </body>
+      <body className="min-h-full flex flex-col bg-ground text-ink">{children}</body>
     </html>
   );
 }

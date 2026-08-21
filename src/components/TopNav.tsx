@@ -6,16 +6,16 @@ export async function TopNav() {
   const manager = await getCurrentManager();
 
   return (
-    <header className="sticky top-0 z-10 border-b border-canvas-border/80 bg-canvas/90 backdrop-blur">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-display text-xl uppercase tracking-wide text-canvas-fg">
+    <header className="sticky top-0 z-10 border-b border-seam/80 bg-ground/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <Link href="/" className="font-display text-xl uppercase tracking-wide text-ink">
           Rice Bowl
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/" className="text-xs uppercase tracking-wide text-canvas-muted hover:text-canvas-fg">
+          <Link href="/" className="text-xs uppercase tracking-wide text-ink-dim hover:text-ink">
             Matchup
           </Link>
-          <Link href="/season" className="text-xs uppercase tracking-wide text-canvas-muted hover:text-canvas-fg">
+          <Link href="/season" className="text-xs uppercase tracking-wide text-ink-dim hover:text-ink">
             Season
           </Link>
           {manager && (
