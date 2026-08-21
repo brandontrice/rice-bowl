@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentManager, getManagers, getBowlStandings } from "@/lib/data";
 import { HouseRuleCard } from "@/components/HouseRuleCard";
+import { DealtCard } from "@/components/DealtCard";
 import { HeadToHead } from "@/components/HeadToHead";
 import { RosterGrid } from "@/components/RosterGrid";
 import { TrashTalkBoard } from "@/components/TrashTalkBoard";
@@ -11,6 +13,7 @@ import { WagerLedger } from "@/components/WagerLedger";
 import { RefreshScoresButton } from "@/components/RefreshScoresButton";
 import { LiveScores } from "@/components/LiveScores";
 import { Shell } from "@/components/ui/Shell";
+import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
 import type { DraftPick, Player, TrashTalk, Wager, Draft } from "@/types/database";
 
 export default async function WeekPage({ params }: { params: Promise<{ weekId: string }> }) {
@@ -128,7 +131,9 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
         )}
       </nav>
 
-      <HouseRuleCard week={week} sniperManager={sniperManager} />
+      <DealtCard weekId={weekId}>
+        <HouseRuleCard week={week} sniperManager={sniperManager} />
+      </DealtCard>
 
       {draftNotDone ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-seam p-10 text-center">
@@ -203,4 +208,25 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
       <WagerLedger weekId={weekId} managers={managers} initial={(wagers ?? []) as Wager[]} />
     </Shell>
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ weekId: string }>;
+}): Promise<Metadata> {
+  const { weekId } = await params;
+  const supabase = await createClient();
+  const { data: week } = await supabase
+    .from("weeks")
+    .select("week_number, house_rule_key")
+    .eq("id", weekId)
+    .maybeSingle();
+
+  if (!week) return { title: "Week" };
+  const rule = HOUSE_RULE_BY_KEY[week.house_rule_key];
+  return {
+    title: `Week ${week.week_number}`,
+    description: rule ? `${rule.name} — ${rule.tagline}` : undefined,
+  };
 }

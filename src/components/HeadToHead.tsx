@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import type { Manager } from "@/types/database";
 
 /**
@@ -101,7 +102,7 @@ function ManagerSide({
           dimmed ? "text-ink-dim" : "text-ink"
         }`}
       >
-        {score.toFixed(digits)}
+        <AnimatedNumber value={score} digits={digits} />
       </span>
       {unit && <span className="label">{unit}</span>}
     </div>

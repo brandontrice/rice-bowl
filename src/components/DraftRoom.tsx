@@ -41,6 +41,7 @@ export function DraftRoom({
   const [error, setError] = useState<string | null>(null);
   const [sniperRound, setSniperRound] = useState(1);
   const [sniping, setSniping] = useState(false);
+  const [justLanded, setJustLanded] = useState<string | null>(null);
 
   const managerById = useMemo(() => new Map(managers.map((m) => [m.id, m])), [managers]);
   const playerById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
@@ -60,6 +61,10 @@ export function DraftRoom({
               (a, b) => a.pick_number - b.pick_number,
             );
           });
+          // A pick used to appear with no acknowledgement at all. Flag it so
+          // the roster row plays its landing animation once.
+          setJustLanded(row.id);
+          window.setTimeout(() => setJustLanded((id) => (id === row.id ? null : id)), 1400);
         },
       )
       .on(
@@ -218,6 +223,7 @@ export function DraftRoom({
           manager={managerById.get(currentManagerId)}
           picks={myPicks}
           slotDefs={slotDefs}
+          justLanded={justLanded}
           hidden={false}
         />
 
@@ -331,6 +337,7 @@ export function DraftRoom({
           manager={opponent}
           picks={opponentPicks}
           slotDefs={slotDefs}
+          justLanded={justLanded}
           hidden={isBlind}
         />
       </div>
@@ -343,12 +350,14 @@ function RosterColumn({
   manager,
   picks,
   slotDefs,
+  justLanded,
   hidden,
 }: {
   title: string;
   manager: Manager | undefined | null;
   picks: PickWithPlayer[];
   slotDefs: ReturnType<typeof rosterSlotDefs>;
+  justLanded?: string | null;
   hidden: boolean;
 }) {
   const rows: { slot: string; pick: PickWithPlayer | null }[] = [];
@@ -381,7 +390,12 @@ function RosterColumn({
         {rows.map((row, i) => (
           <div
             key={i}
-            className="grid grid-cols-[38px_minmax(0,1fr)] items-center gap-2 border-t border-seam-soft px-3 py-1.5 first:border-t-0"
+            className={`grid grid-cols-[38px_minmax(0,1fr)] items-center gap-2 border-t border-seam-soft px-3 py-1.5 first:border-t-0 ${
+              row.pick && row.pick.id === justLanded ? "animate-pick" : ""
+            }`}
+            style={
+              { "--pulse": manager?.accent_color ?? "var(--accent)" } as React.CSSProperties
+            }
           >
             <span className="label">{row.slot}</span>
             {hidden && row.pick ? (
