@@ -7,6 +7,7 @@ import { rosterSlotDefs, hasOpenSlotFor, TOTAL_ROSTER_SIZE } from "@/lib/draft";
 import { positionColor } from "@/lib/rule-style";
 import { HouseRuleCard } from "@/components/HouseRuleCard";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { PickClock } from "@/components/PickClock";
 import type { Draft, DraftPick, Manager, Player, Week } from "@/types/database";
 
 type PickWithPlayer = DraftPick & { players: Player | null };
@@ -42,6 +43,7 @@ export function DraftRoom({
   const [sniperRound, setSniperRound] = useState(1);
   const [sniping, setSniping] = useState(false);
   const [justLanded, setJustLanded] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const managerById = useMemo(() => new Map(managers.map((m) => [m.id, m])), [managers]);
   const playerById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
@@ -203,6 +205,13 @@ export function DraftRoom({
                 ? "You're on the clock"
                 : `Waiting on ${managerById.get(onTheClock ?? "")?.display_name ?? "…"}`}
             </p>
+            <PickClock
+              draftId={draft.id}
+              deadlineAt={draft.deadline_at}
+              pickSeconds={draft.pick_seconds}
+              isMyTurn={isMyTurn}
+              onAutoPick={setNotice}
+            />
           </>
         )}
         {poolRestrictionReason && <p className="mt-2 text-xs text-accent">{poolRestrictionReason}</p>}
@@ -214,6 +223,15 @@ export function DraftRoom({
           className="rounded-lg border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm text-crimson"
         >
           {error}
+        </p>
+      )}
+
+      {notice && (
+        <p
+          role="status"
+          className="rounded-lg border border-flare/40 bg-flare/10 px-3 py-2 text-sm text-flare"
+        >
+          {notice}
         </p>
       )}
 
@@ -277,10 +295,16 @@ export function DraftRoom({
                   return (
                     <div
                       key={p.id}
-                      className="grid grid-cols-[28px_auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 border-t border-seam-soft px-3 py-2 first:border-t-0"
+                      className="grid grid-cols-[42px_auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 border-t border-seam-soft px-3 py-2 first:border-t-0"
                     >
-                      <span className="tabular-score text-[11px] text-ink-faint">
-                        {p.pos_rank ?? "—"}
+                      {/* Positional rank, e.g. RB14. The board is ordered by
+                          points per game across positions, so these numbers
+                          are deliberately not sequential. */}
+                      <span
+                        className="tabular-score text-[11px]"
+                        style={{ color: positionColor(p.position) }}
+                      >
+                        {p.pos_rank ? `${p.position}${p.pos_rank}` : "—"}
                       </span>
                       <PlayerAvatar
                         playerId={p.id}
@@ -292,9 +316,10 @@ export function DraftRoom({
                       <span className="min-w-0">
                         <span className="block truncate text-sm text-ink">{p.full_name}</span>
                         <span className="font-data text-[10px] text-ink-faint">
-                          <span style={{ color: positionColor(p.position) }}>{p.position}</span>
-                          {p.team ? ` · ${p.team}` : ""}
+                          {/* Position lives in the rank chip on the left. */}
+                          {p.team ?? "FA"}
                           {p.years_exp === 0 ? " · Rookie" : ""}
+                          {p.games_played ? ` · ${p.games_played}g` : ""}
                         </span>
                       </span>
                       <span className="tabular-score w-11 text-right text-xs text-ink-dim">
