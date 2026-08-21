@@ -1,3 +1,11 @@
+export type ManagerAllowlistEntry = {
+  email: string;
+  display_name: string;
+  accent_color: string;
+  favorite_team: string | null;
+  created_at: string;
+};
+
 export type Manager = {
   id: string;
   email: string;

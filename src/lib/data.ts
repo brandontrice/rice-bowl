@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Manager, Week, Draft } from "@/types/database";
+import type { Manager, ManagerAllowlistEntry, Week, Draft } from "@/types/database";
 
 export async function getCurrentManager(): Promise<Manager | null> {
   const supabase = await createClient();
@@ -16,6 +16,15 @@ export async function getManagers(): Promise<Manager[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("managers").select("*").order("created_at", { ascending: true });
   return (data ?? []) as Manager[];
+}
+
+export async function getManagerAllowlist(): Promise<ManagerAllowlistEntry[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("manager_allowlist")
+    .select("*")
+    .order("created_at", { ascending: true });
+  return (data ?? []) as ManagerAllowlistEntry[];
 }
 
 export async function getLatestWeek(): Promise<(Week & { drafts: Draft[] }) | null> {
