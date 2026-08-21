@@ -115,10 +115,53 @@ tab and it stops polling entirely. See
 That leaves "Refresh" on the head-to-head as a manual nudge rather than
 the only path — which is what it was in V1.
 
-If you ever want true server-side scoring every fifteen minutes without a
-Pro plan, a scheduled GitHub Actions workflow can `curl` the same
-endpoint with `CRON_SECRET`; the route is already built for it and does
-not care who calls.
+### 6. Server-side scoring on game days
+
+[`.github/workflows/score.yml`](.github/workflows/score.yml) calls the same
+`/api/cron/score` endpoint every 15 minutes during game windows, which is
+what Vercel's Hobby plan will not do. The route does not care who invokes
+it, only that the bearer token matches.
+
+This is belt-and-braces rather than load-bearing — the matchup page
+already refreshes itself while someone is watching. What the workflow adds
+is scoring when *nobody* has a tab open, so the standings are current the
+next time either manager looks.
+
+**One setup step.** Add the same `CRON_SECRET` value as a repository
+secret, at Settings → Secrets and variables → Actions → New repository
+secret. Without it the workflow fails loudly on its first run rather than
+silently doing nothing. With the GitHub CLI:
+
+```bash
+gh secret set CRON_SECRET --repo brandontrice/rice-bowl
+```
+
+The production URL is baked in as a default. If the domain ever changes,
+add an `APP_URL` repository *variable* rather than editing the workflow.
+
+**Schedule** (UTC — GitHub cron has no timezone support):
+
+| Window | Covers |
+| --- | --- |
+| `*/15 17-23 * * 0` | Sunday early and late afternoon games |
+| `*/15 0-4 * * 1` | Sunday night, which is already Monday in UTC |
+| `*/15 0-4 * * 2` | Monday Night Football |
+| `*/15 0-4 * * 5` | Thursday Night Football |
+
+Deliberately not round-the-clock: 15-minute polling all week is roughly
+2,900 billed Actions minutes a month against a 2,000-minute free
+allowance for private repos. These windows come to about 430.
+
+Two things worth knowing about GitHub's scheduler: runs are best-effort
+and can be delayed by several minutes under load, and **scheduled
+workflows are disabled automatically after 60 days without repo
+activity** — an offseason risk more than an in-season one. `Run workflow`
+on the Actions tab re-enables and tests it by hand.
+
+**It must point at production.** Preview deployments sit behind Vercel's
+Deployment Protection, which answers unauthenticated requests with a 302
+to `vercel.com/sso-api` before any application code runs, so the workflow
+cannot be pointed at a preview URL without a protection-bypass token.
 
 ## Running locally
 
