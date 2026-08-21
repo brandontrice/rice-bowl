@@ -43,5 +43,5 @@ supabase/seed_allowlist.sql
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-.env*
+# supabase CLI cache (config.toml IS committed; this is not)
+supabase/.temp
