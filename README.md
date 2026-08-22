@@ -61,8 +61,10 @@ in the Supabase SQL Editor:
 | `0009_game_time_tbd.sql` | `nfl_games.time_valid`, so flex-scheduled games show "Time TBD" rather than a midnight placeholder |
 | `0010_player_lock.sql` | `player_is_locked()`, enforced inside `make_pick()` and `auto_pick()` so a kicked-off player can't be drafted |
 | `0011_draft_ready.sql` | The `draft_ready` table and `set_draft_ready()`; `make_pick()` / `auto_pick()` now refuse while a draft is pending |
+| `0012_keeps_and_evictions.sql` | `roster_keeps`, `draft_picks.kept`, and the `keep_player()` / `evict_player()` / `active_keeps()` functions |
+| `0013_season_year_unique.sql` | A unique index on `seasons.year`, so concurrent week creation can't duplicate a season |
 
-Only `0003` through `0011` are safe to re-run: they guard every statement
+Only `0003` through `0013` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -315,6 +317,49 @@ mid-draft would strand the other manager. If the pick clock was armed
 while waiting, it restarts at the moment the draft goes live rather than
 counting down from whenever the length was set.
 
+## Keeps, Full House and Evictions
+
+The league stops being a pure weekly redraft and starts accumulating a
+team.
+
+| After | You keep | Next week drafts |
+| --- | --- | --- |
+| Week 1 | 1 player | 7 |
+| Week 2 | another | 6 |
+| … | … | … |
+| Week 8 | the eighth | 0 — **Full House** |
+
+A keep is chosen off a *finished* week, from the roster that actually
+played it: choosing on projection rather than on what happened would make
+it a different, duller decision. One per week, and the choice is
+permanent.
+
+**Full House is where the twist starts.** With every slot kept there is
+nothing left to draft, so from that point you must **evict** one resident
+each week, and the next draft is exactly one pick long — their
+replacement. The roster stops growing and starts turning over, one player
+at a time, for the rest of the season. Evictions are confirmed rather than
+one-click, because there is no undo once the next week is built.
+
+**Last week's loser picks first.** Without it the manager who is ahead
+compounds the advantage every week: better roster, better keeps, first
+pick, forever.
+
+Keeps are materialised into the new week as `draft_picks` rows with
+`kept = true`, so scoring, the roster grid and the matchup page need no
+idea keeps exist — a kept player is a pick that was already made. They sit
+at negative `pick_number`, which keeps them unique against
+`unique (draft_id, pick_number)`, sorts them ahead of the live picks, and
+reads unmistakably as "not chosen at the board".
+
+Two rules worth knowing:
+
+- **A House Rule restricts what you may draft, never who you already
+  signed.** Keeps are slotted from the base roster shape, so No-Fly Zone
+  doesn't quietly strip a kept tight end off your team.
+- **If you never choose, your best scorer from that week is kept for
+  you.** The week rolls on Tuesday whether or not anyone opened the app,
+  and a missing keep would stall the next draft.
 ## The week's rhythm
 
 | When | What happens |

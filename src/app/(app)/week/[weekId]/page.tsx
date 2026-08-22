@@ -14,6 +14,8 @@ import { BowlStandings } from "@/components/BowlStandings";
 import { WagerLedger } from "@/components/WagerLedger";
 import { RefreshScoresButton } from "@/components/RefreshScoresButton";
 import { LiveScores } from "@/components/LiveScores";
+import { KeepPanel, type KeepCandidate } from "@/components/KeepPanel";
+import { EvictPanel, type Resident } from "@/components/EvictPanel";
 import { Shell } from "@/components/ui/Shell";
 import { getWeekTeamGames } from "@/lib/game-status";
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
@@ -115,6 +117,73 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     totalsByManager.set(row.manager_id, (totalsByManager.get(row.manager_id) ?? 0) + row.points);
   }
   const hasScores = (scoreRows ?? []).length > 0;
+
+  // Keeps: after a finished week you claim one player for good, and once
+  // all eight slots are yours the choice becomes an eviction instead.
+  let keepView: {
+    candidates: KeepCandidate[];
+    chosen: KeepCandidate | null;
+    keepsHeld: number;
+    residents: Resident[];
+    evicted: Resident | null;
+  } | null = null;
+
+  if (currentManager && week.status === "complete") {
+    const nextWeek = week.week_number + 1;
+    const [{ data: keepRows }, { data: heldNow }] = await Promise.all([
+      supabase
+        .from("roster_keeps")
+        .select("player_id, kept_after_week, released_after_week")
+        .eq("season_id", week.season_id)
+        .eq("manager_id", currentManager.id),
+      supabase.rpc("active_keeps", {
+        p_season_id: week.season_id,
+        p_manager_id: currentManager.id,
+        p_for_week: nextWeek,
+      }),
+    ]);
+
+    const held = new Set(
+      ((heldNow ?? []) as { player_id: string }[]).map((r) => r.player_id),
+    );
+    const mine = picks.filter((p) => p.manager_id === currentManager.id);
+    const toRow = (p: (typeof mine)[number]) => ({
+      playerId: p.player_id,
+      player: p.players,
+      slot: p.roster_slot,
+    });
+
+    const keptThisWeek = (keepRows ?? []).find(
+      (k) => k.kept_after_week === week.week_number && k.released_after_week === null,
+    );
+    const evictedThisWeek = (keepRows ?? []).find(
+      (k) => k.released_after_week === week.week_number,
+    );
+
+    keepView = {
+      keepsHeld: held.size,
+      candidates: mine.map((p) => ({
+        ...toRow(p),
+        points: scoreMap.get(p.player_id) ?? null,
+        alreadyKept: held.has(p.player_id) && p.player_id !== keptThisWeek?.player_id,
+      })),
+      chosen: keptThisWeek
+        ? {
+            ...(mine.find((p) => p.player_id === keptThisWeek.player_id)
+              ? toRow(mine.find((p) => p.player_id === keptThisWeek.player_id)!)
+              : { playerId: keptThisWeek.player_id, player: null, slot: "" }),
+            points: scoreMap.get(keptThisWeek.player_id) ?? null,
+            alreadyKept: true,
+          }
+        : null,
+      residents: mine.filter((p) => held.has(p.player_id)).map(toRow),
+      evicted: evictedThisWeek
+        ? (mine.find((p) => p.player_id === evictedThisWeek.player_id)
+            ? toRow(mine.find((p) => p.player_id === evictedThisWeek.player_id)!)
+            : { playerId: evictedThisWeek.player_id, player: null, slot: "" })
+        : null,
+    };
+  }
 
   // The action colour follows whoever is ahead, so the page picks up the
   // rivalry rather than staying a fixed brand orange.
@@ -271,6 +340,25 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
             ))}
           </div>
         </>
+      )}
+
+      {keepView && currentManager && (
+        keepView.keepsHeld >= 8 ? (
+          <EvictPanel
+            seasonId={week.season_id}
+            forWeek={week.week_number + 1}
+            residents={keepView.residents}
+            evicted={keepView.evicted}
+          />
+        ) : (
+          <KeepPanel
+            weekId={weekId}
+            weekNumber={week.week_number}
+            candidates={keepView.candidates}
+            keepsHeld={keepView.keepsHeld}
+            chosen={keepView.chosen}
+          />
+        )
       )}
 
       {currentManager && (

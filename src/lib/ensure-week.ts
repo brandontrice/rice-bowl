@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchSleeperState } from "@/lib/sleeper";
 import { dealHouseRule } from "@/lib/house-rules";
 import { mulberry32, seedFromWeek, pick as rngPick } from "@/lib/prng";
-import { buildSnakeOrder, derivePoolLock } from "@/lib/draft";
+import { buildSnakeOrder, derivePoolLock, TOTAL_ROSTER_SIZE } from "@/lib/draft";
+import { activeKeeps, autoKeepBestScorer, expectedKeeps, materializeKeeps } from "@/lib/keeps";
 import { fetchWeekKickoff } from "@/lib/schedule";
 import { REGULAR_SEASON_WEEKS } from "@/lib/nfl-schedule";
 import type { Week, Draft } from "@/types/database";
@@ -86,7 +87,61 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
   const { locked_division, locked_conference } = derivePoolLock(houseRule.key, seed);
 
   const managerIds = managers.map((m) => m.id) as [string, string];
-  const firstPicker = rngPick(rng, managerIds);
+
+  // Everyone should be carrying one keep per completed week. If a manager
+  // never chose, take their best scorer — the week rolls on Tuesday whether
+  // or not anyone opened the app, and a missing keep would stall the draft.
+  if (weekNumber > 1) {
+    const { data: lastWeek } = await supabase
+      .from("weeks")
+      .select("id, week_number, winner_manager_id")
+      .eq("season_id", season.id)
+      .eq("week_number", weekNumber - 1)
+      .eq("status", "complete")
+      .maybeSingle();
+
+    if (lastWeek) {
+      for (const managerId of managerIds) {
+        const held = await activeKeeps(supabase, season.id, managerId, weekNumber);
+        if (held.length < expectedKeeps(weekNumber)) {
+          await autoKeepBestScorer(supabase, {
+            seasonId: season.id,
+            weekId: lastWeek.id,
+            weekNumber: lastWeek.week_number,
+            managerId,
+          });
+        }
+      }
+    }
+  }
+
+  const keepsByManager = new Map<string, string[]>();
+  for (const managerId of managerIds) {
+    keepsByManager.set(managerId, await activeKeeps(supabase, season.id, managerId, weekNumber));
+  }
+
+  // Rounds left is whatever the keeps didn't already fill. At Full House
+  // that's zero until somebody evicts.
+  const rounds = Math.max(
+    0,
+    TOTAL_ROSTER_SIZE - Math.max(...managerIds.map((id) => keepsByManager.get(id)?.length ?? 0)),
+  );
+
+  // Last week's loser picks first. Without it the manager who is already
+  // ahead compounds the advantage every week for the rest of the season.
+  const { data: previous } = await supabase
+    .from("weeks")
+    .select("winner_manager_id, status")
+    .eq("season_id", season.id)
+    .eq("week_number", weekNumber - 1)
+    .maybeSingle();
+
+  const loser =
+    previous?.status === "complete" && previous.winner_manager_id
+      ? managerIds.find((id) => id !== previous.winner_manager_id)
+      : null;
+
+  const firstPicker = loser ?? rngPick(rng, managerIds);
   const orderedIds: [string, string] =
     firstPicker === managerIds[0] ? managerIds : [managerIds[1], managerIds[0]];
   const sniperManagerId = houseRule.key === "sniper" ? rngPick(rng, managerIds) : null;
@@ -115,13 +170,34 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
     .single();
   if (weekError) return { status: "error", error: weekError.message };
 
-  const draftOrder = buildSnakeOrder(orderedIds);
+  const draftOrder = buildSnakeOrder(orderedIds, rounds);
   const { data: draft, error: draftError } = await supabase
     .from("drafts")
-    .insert({ week_id: week.id, status: "pending", draft_order: draftOrder, current_pick: 0 })
+    .insert({
+      week_id: week.id,
+      // Nothing to draft means nothing to wait for: a Full House week with
+      // no eviction is complete the moment it is created.
+      status: rounds === 0 ? "complete" : "pending",
+      draft_order: draftOrder,
+      current_pick: 0,
+    })
     .select("*")
     .single();
   if (draftError) return { status: "error", error: draftError.message };
+
+  // Carry the residents in as picks that were already made.
+  for (const managerId of managerIds) {
+    await materializeKeeps(supabase, {
+      draftId: draft.id,
+      weekId: week.id,
+      managerId,
+      playerIds: keepsByManager.get(managerId) ?? [],
+    });
+  }
+
+  if (rounds === 0) {
+    await supabase.from("weeks").update({ status: "scoring" }).eq("id", week.id);
+  }
 
   return { status: "ready", week: { ...week, drafts: [draft] } };
 }

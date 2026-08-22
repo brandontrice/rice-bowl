@@ -138,10 +138,19 @@ export function derivePoolLock(
   return { locked_division: null, locked_conference: null };
 }
 
-/** Standard snake order for a 2-manager, 8-round draft (equivalent to strict alternation). */
-export function buildSnakeOrder(managerIds: [string, string]): string[] {
+/**
+ * Snake order over however many rounds are actually left.
+ *
+ * Rounds is no longer always eight: from Week 2 each kept player occupies
+ * a slot that never goes to the board, and at Full House only an eviction
+ * opens one up.
+ */
+export function buildSnakeOrder(
+  managerIds: [string, string],
+  rounds: number = TOTAL_ROSTER_SIZE,
+): string[] {
   const order: string[] = [];
-  for (let round = 0; round < TOTAL_ROSTER_SIZE; round++) {
+  for (let round = 0; round < Math.max(0, rounds); round++) {
     const reversed = round % 2 === 1;
     const roundOrder = reversed ? [managerIds[1], managerIds[0]] : managerIds;
     order.push(...roundOrder);
