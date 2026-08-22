@@ -57,8 +57,9 @@ in the Supabase SQL Editor:
 | `0005_player_stats_and_news.sql` | `players.espn_id`, the `player_season_stats` / `player_week_stats` tables, and the `player_season_to_date` view behind the rankings browser |
 | `0006_projections.sql` | `player_projections` plus `players.proj_ppg` / `proj_points` / `adp` for Sleeper's season projections and average draft position |
 | `0007_reveal_and_lock.sql` | `weeks.locks_at` (the week's first kickoff) and the `week_reveals` table behind the face-down card |
+| `0008_nfl_schedule.sql` | The `nfl_games` table behind `/schedule` — kickoff times, networks, venues and scores |
 
-Only `0003` through `0007` are safe to re-run: they guard every statement
+Only `0003` through `0008` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -256,7 +257,9 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
 4. **Season (`/season`)** — Bowl Point standings, current streak,
    head-to-head record by rule category, week-by-week history, and the
    full wager ledger.
-5. **Deck (`/deck`)** — all 20 cards, with the ones already dealt this
+5. **Schedule (`/schedule`)** — every game of the season by week and day,
+   with kickoff times, networks and live scores; filterable to one team.
+6. **Deck (`/deck`)** — all 20 cards, with the ones already dealt this
    season marked.
 
 ## The week's rhythm
@@ -289,6 +292,26 @@ often than you would think: in 2026 Week 1 opens on a **Wednesday**, so
 does Week 12 on Thanksgiving, and Week 18 has no Thursday game at all.
 The countdown renders client-side so it reads the same wherever either
 manager happens to be.
+
+## The NFL schedule
+
+`/schedule` lists every game of the regular season: grouped by day within
+a week, with kickoff time, network, venue, and live or final scores. Pick
+any team to see all 17 of their games instead.
+
+Cached into `nfl_games` rather than fetched per view. A team's season would
+otherwise be eighteen upstream requests, and holding the rows locally makes
+kickoff time, network and score all filterable in one query. The daily sync
+pulls the whole season; the scoring path refreshes only the current week,
+so live scores move without re-pulling the other seventeen.
+
+Times are formatted client-side. The server would have to pick a timezone,
+and a countdown or a kickoff time should read correctly for whichever
+manager is looking at it.
+
+One join that matters: ESPN abbreviates Washington `WSH` and Sleeper uses
+`WAS`, so team codes are normalised to Sleeper's on the way in and
+`nfl_games.home_team` lines up with `players.team`.
 
 ## House Rules
 
@@ -395,9 +418,18 @@ background job.
 
 ## Still not in v1
 
-Near-live in-game scoring (Sleeper posts stats after games, not during),
-and anything needing real-time team records or the broadcast schedule —
-Underdog Week and Primetime Only stay honor-system for that reason.
+Near-live in-game scoring — Sleeper posts stats after games rather than
+during them.
+
+**Underdog Week** stays honor-system: it needs live team records, and
+nothing here tracks standings.
+
+**Primetime Only no longer has to be.** It was honor-system because the
+app had no broadcast schedule; `nfl_games.network` now carries one, so
+"is this player in a nationally televised game" is a joinable question.
+Turning it on would move a rule from honour to enforced, which changes how
+a week can be played, so it is left as a decision rather than taken as a
+default.
 
 V2 is where the self-hosted Postgres, the near-live scoring worker,
 historical analytics, AI draft commentary, an expanded deck, and the

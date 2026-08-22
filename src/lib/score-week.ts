@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchSleeperState, fetchSleeperWeekStats } from "@/lib/sleeper";
 import { computeWeeklyPoints } from "@/lib/scoring";
 import { syncWeekStats, loadKnownPlayerIds } from "@/lib/player-stats";
+import { syncSchedule } from "@/lib/nfl-schedule";
 
 export type ScoreWeekResult = {
   skipped?: string;
@@ -53,6 +54,15 @@ export async function scoreWeek(
     );
   } catch (error) {
     console.error("player_week_stats upsert failed", error);
+  }
+
+  // Refresh just this week's games so the schedule view carries live
+  // scores and statuses. One request; the daily sync owns the other
+  // seventeen weeks.
+  try {
+    await syncSchedule(supabase, seasonYear, [week.week_number]);
+  } catch (error) {
+    console.error("nfl_games refresh failed", error);
   }
 
   const computedAt = new Date().toISOString();

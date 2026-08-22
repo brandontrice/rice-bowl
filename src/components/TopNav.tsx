@@ -24,6 +24,7 @@ export async function TopNav() {
           <NavLink href="/">Matchup</NavLink>
           <NavLink href="/season">Season</NavLink>
           <NavLink href="/players">Players</NavLink>
+          <NavLink href="/schedule">Schedule</NavLink>
           <NavLink href="/deck">Deck</NavLink>
 
           {manager && (

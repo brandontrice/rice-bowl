@@ -9,6 +9,7 @@ import { computeWeeklyPoints } from "@/lib/scoring";
 import { syncSeasonStats, syncWeekStats } from "@/lib/player-stats";
 import { resolveMissingEspnIds } from "@/lib/espn-ids";
 import { syncProjections } from "@/lib/projections";
+import { syncSchedule } from "@/lib/nfl-schedule";
 import type { Player } from "@/types/database";
 
 const STALE_MS = 12 * 60 * 60 * 1000; // Sleeper's dump barely moves intra-day.
@@ -82,6 +83,7 @@ export async function syncPlayers(
   seasonRows: number;
   weekRows: number;
   espnIdsResolved: number;
+  scheduleRows: number;
   projected: number;
   projectionsMirrored: number;
   withAdp: number;
@@ -194,6 +196,11 @@ export async function syncPlayers(
       }))
     : { projected: 0, mirrored: 0, withAdp: 0 };
 
+  // The NFL schedule, for the /schedule view and the kickoff deadlines.
+  const scheduleRows = Number.isFinite(seasonYear)
+    ? await syncSchedule(supabase, seasonYear).catch(() => 0)
+    : 0;
+
   // Sleeper only carries an espn_id for about a fifth of the pool, and the
   // gaps include names like Ja'Marr Chase — resolve the rest off ESPN's
   // team rosters so the player pages have news to show.
@@ -209,6 +216,7 @@ export async function syncPlayers(
     seasonRows,
     weekRows,
     espnIdsResolved: espn.resolved,
+    scheduleRows,
     projected: projections.projected,
     projectionsMirrored: projections.mirrored,
     withAdp: projections.withAdp,
