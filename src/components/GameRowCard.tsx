@@ -102,8 +102,15 @@ export function GameRowCard({ game }: { game: Game }) {
           <span className="text-ink-dim">Final</span>
         ) : (
           kickoff && (
+            // Day headers are bucketed by Eastern, which is how the league
+            // schedules; the time is the viewer's own, so it names its zone
+            // rather than leaving the two looking like they disagree.
             <span className="text-ink-dim">
-              {kickoff.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+              {kickoff.toLocaleTimeString(undefined, {
+                hour: "numeric",
+                minute: "2-digit",
+                timeZoneName: "short",
+              })}
             </span>
           )
         )}
