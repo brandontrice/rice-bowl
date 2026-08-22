@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rosterSlotDefs, assignSlot, poolRestriction } from "@/lib/draft";
+import { getWeekTeamGames } from "@/lib/game-status";
 import type { DraftPick, Player, Week } from "@/types/database";
 
 const FANTASY_POSITIONS = ["QB", "RB", "WR", "TE", "DEF"];
@@ -19,6 +20,7 @@ export async function pickBestAvailable(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>,
   week: Week,
+  seasonYear: number,
   draftId: string,
   managerId: string,
 ): Promise<AutoDraftChoice | null> {
@@ -59,9 +61,16 @@ export async function pickBestAvailable(
     .order("ppg", { ascending: false, nullsFirst: false })
     .order("full_name", { ascending: true });
 
+  // A player whose game has kicked off is off the board — the clock must
+  // not hand someone a locked player any more than a manager may take one.
+  // make_pick/auto_pick reject it anyway; skipping here means the clock
+  // picks the best *available* player rather than failing on the best one.
+  const teamGames = await getWeekTeamGames(supabase, seasonYear, week.week_number);
+
   for (const player of (playersRaw ?? []) as Player[]) {
     if (taken.has(player.id)) continue;
     if (!restriction.isEligible(player)) continue;
+    if (player.team && teamGames.get(player.team)?.locked) continue;
     const slot = assignSlot(
       player.position,
       (myPicks ?? []) as Pick<DraftPick, "roster_slot">[],

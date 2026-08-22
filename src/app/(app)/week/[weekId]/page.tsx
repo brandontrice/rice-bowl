@@ -15,6 +15,7 @@ import { WagerLedger } from "@/components/WagerLedger";
 import { RefreshScoresButton } from "@/components/RefreshScoresButton";
 import { LiveScores } from "@/components/LiveScores";
 import { Shell } from "@/components/ui/Shell";
+import { getWeekTeamGames } from "@/lib/game-status";
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
 import type { DraftPick, Player, TrashTalk, Wager, Draft } from "@/types/database";
 
@@ -73,6 +74,19 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
   const idx = (siblingWeeks ?? []).findIndex((w) => w.id === weekId);
   const prevWeek = idx > 0 ? siblingWeeks![idx - 1] : null;
   const nextWeek = idx >= 0 && idx < (siblingWeeks?.length ?? 0) - 1 ? siblingWeeks![idx + 1] : null;
+
+  // This week's game per team, so each roster row can say whether its
+  // player is yet to play, on the field, or done.
+  const { data: seasonRow } = await supabase
+    .from("seasons")
+    .select("year")
+    .eq("id", week.season_id)
+    .maybeSingle();
+  const teamGames = await getWeekTeamGames(
+    supabase,
+    seasonRow?.year ?? new Date().getUTCFullYear(),
+    week.week_number,
+  );
 
   const sniperManager = week.sniper_manager_id
     ? (managers.find((m) => m.id === week.sniper_manager_id) ?? null)
@@ -210,6 +224,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
                 week={week}
                 isMe={currentManager?.id === m.id}
                 totalPoints={hasScores ? (totalsByManager.get(m.id) ?? 0) : null}
+                games={teamGames}
               />
             ))}
           </div>

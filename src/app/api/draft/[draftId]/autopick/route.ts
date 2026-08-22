@@ -59,7 +59,19 @@ export async function POST(
     return NextResponse.json({ error: "nobody is on the clock" }, { status: 409 });
   }
 
-  const choice = await pickBestAvailable(supabase, week, draftId, onTheClock);
+  const { data: season } = await supabase
+    .from("seasons")
+    .select("year")
+    .eq("id", week.season_id)
+    .maybeSingle();
+
+  const choice = await pickBestAvailable(
+    supabase,
+    week,
+    season?.year ?? new Date().getUTCFullYear(),
+    draftId,
+    onTheClock,
+  );
   if (!choice) {
     return NextResponse.json(
       { error: "no eligible player is left for an open slot" },

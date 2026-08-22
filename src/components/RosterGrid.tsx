@@ -3,6 +3,8 @@ import type { DraftPick, Manager, Player, Week } from "@/types/database";
 import { rosterSlotDefs } from "@/lib/draft";
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { GameNote } from "@/components/ui/GameNote";
+import type { TeamGame } from "@/lib/game-status";
 
 type PickWithPlayer = DraftPick & { players: Player | null };
 
@@ -13,6 +15,7 @@ export function RosterGrid({
   week,
   isMe,
   totalPoints,
+  games,
 }: {
   manager: Manager;
   picks: PickWithPlayer[];
@@ -20,6 +23,8 @@ export function RosterGrid({
   week: Pick<Week, "house_rule_key" | "flex_position">;
   isMe: boolean;
   totalPoints: number | null;
+  /** This week's game per team, for the live status under each name. */
+  games?: Map<string, TeamGame>;
 }) {
   const slotDefs = rosterSlotDefs(week);
   const rows: { slot: string; pick: PickWithPlayer | null }[] = [];
@@ -80,15 +85,18 @@ export function RosterGrid({
                 <span className="h-6 w-6 rounded-lg border border-dashed border-seam" />
               )}
               {row.pick?.players ? (
-                <Link
-                  href={`/players/${row.pick.player_id}`}
-                  className="truncate text-sm text-ink transition-colors hover:text-accent"
-                >
-                  {row.pick.players.full_name}
-                  <span className="ml-1.5 font-data text-[10px] text-ink-faint">
-                    {row.pick.players.team}
-                  </span>
-                </Link>
+                <span className="min-w-0">
+                  <Link
+                    href={`/players/${row.pick.player_id}`}
+                    className="block truncate text-sm text-ink transition-colors hover:text-accent"
+                  >
+                    {row.pick.players.full_name}
+                  </Link>
+                  <GameNote
+                    team={row.pick.players.team}
+                    game={row.pick.players.team ? (games?.get(row.pick.players.team) ?? null) : null}
+                  />
+                </span>
               ) : (
                 <span className="text-sm text-ink-faint">Empty</span>
               )}

@@ -59,8 +59,9 @@ in the Supabase SQL Editor:
 | `0007_reveal_and_lock.sql` | `weeks.locks_at` (the week's first kickoff) and the `week_reveals` table behind the face-down card |
 | `0008_nfl_schedule.sql` | The `nfl_games` table behind `/schedule` — kickoff times, networks, venues and scores |
 | `0009_game_time_tbd.sql` | `nfl_games.time_valid`, so flex-scheduled games show "Time TBD" rather than a midnight placeholder |
+| `0010_player_lock.sql` | `player_is_locked()`, enforced inside `make_pick()` and `auto_pick()` so a kicked-off player can't be drafted |
 
-Only `0003` through `0009` are safe to re-run: they guard every statement
+Only `0003` through `0010` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -294,6 +295,35 @@ does Week 12 on Thanksgiving, and Week 18 has no Thursday game at all.
 The countdown renders client-side so it reads the same wherever either
 manager happens to be.
 
+## The player lock
+
+A player is undraftable once **their own** game has kicked off — not once
+the week's first game has. Taking a Sunday afternoon receiver at 9pm on
+Thursday is fine. Taking the Thursday tight end who just posted 24 is not,
+and `weeks.locks_at` was only ever a countdown: nothing consulted it when
+a pick was made.
+
+Enforced in Postgres, by `player_is_locked()` inside both `make_pick()`
+and `auto_pick()`, because the UI is a suggestion. The board also greys
+locked players out and labels the button `Locked` rather than hiding them
+— a name that silently vanished mid-draft is a worse experience than one
+you can see is gone. Auto-draft skips them too, so the clock hands over
+the best *available* player rather than failing on the best one.
+
+Players on a bye have no game row and stay draftable. They score nothing,
+which is a choice the manager is allowed to make.
+
+## Live game status
+
+Every roster row on the matchup page says what its player's team is doing:
+the kickoff time before the game, a pulsing marker and the period during
+it, `Final` after, and `Bye` when they aren't playing at all. It answers
+"why is this number still zero" without anyone going to look it up.
+
+Rendered client-side. `RosterGrid` is a server component, so a kickoff
+time formatted there would come out in the server's timezone — UTC on
+Vercel — which is wrong for both managers.
+
 ## The NFL schedule
 
 `/schedule` lists every game of the regular season: grouped by day within
@@ -437,6 +467,9 @@ background job.
 
 Near-live in-game scoring — Sleeper posts stats after games rather than
 during them.
+
+**Player lock** is in: a player comes off the board the moment their own
+game kicks off. See [The player lock](#the-player-lock).
 
 **Underdog Week** stays honor-system: it needs live team records, and
 nothing here tracks standings.

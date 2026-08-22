@@ -7,6 +7,7 @@ import { isPlayerPoolStale, syncPlayers } from "@/lib/sync-players";
 import { createServiceClient } from "@/lib/supabase/service";
 import { DraftRoom } from "@/components/DraftRoom";
 import { Shell } from "@/components/ui/Shell";
+import { getWeekTeamGames } from "@/lib/game-status";
 import type { Player, Draft, DraftPick } from "@/types/database";
 
 const FANTASY_POSITIONS = ["QB", "RB", "WR", "TE", "DEF"];
@@ -78,6 +79,21 @@ export default async function DraftPage({
   const restriction = poolRestriction(week);
   const players = ((playersRaw ?? []) as Player[]).filter(restriction.isEligible);
 
+  // Which teams have already kicked off. Their players are shown but not
+  // draftable — hiding them outright would leave a manager wondering where
+  // a name went, and "locked" is the more useful answer.
+  const { data: season } = await supabase
+    .from("seasons")
+    .select("year")
+    .eq("id", week.season_id)
+    .maybeSingle();
+  const teamGames = await getWeekTeamGames(
+    supabase,
+    season?.year ?? new Date().getUTCFullYear(),
+    week.week_number,
+  );
+  const lockedTeams = [...teamGames.values()].filter((g) => g.locked).map((g) => g.team);
+
   const { data: picks } = await supabase
     .from("draft_picks")
     .select("*, players(*)")
@@ -94,6 +110,7 @@ export default async function DraftPage({
         players={players}
         initialPicks={(picks ?? []) as (DraftPick & { players: Player | null })[]}
         poolRestrictionReason={restriction.reason}
+        lockedTeams={lockedTeams}
       />
     </Shell>
   );

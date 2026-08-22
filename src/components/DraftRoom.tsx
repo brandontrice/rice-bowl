@@ -24,6 +24,7 @@ export function DraftRoom({
   players,
   initialPicks,
   poolRestrictionReason,
+  lockedTeams,
 }: {
   week: Week;
   draft: Draft;
@@ -32,6 +33,8 @@ export function DraftRoom({
   players: Player[];
   initialPicks: PickWithPlayer[];
   poolRestrictionReason: string | null;
+  /** Teams whose game has kicked off — their players can no longer be taken. */
+  lockedTeams: string[];
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initialDraft);
@@ -97,6 +100,7 @@ export function DraftRoom({
 
   const slotDefs = rosterSlotDefs(week);
   const pickedIds = new Set(picks.map((p) => p.player_id));
+  const lockedSet = useMemo(() => new Set(lockedTeams), [lockedTeams]);
   const term = search.trim().toLowerCase();
 
   // The pool arrives pre-sorted by average draft position from the server,
@@ -292,11 +296,17 @@ export function DraftRoom({
                   </p>
                 )}
                 {filtered.map((p) => {
-                  const canDraft = isMyTurn && hasOpenSlotFor(p.position, myPicks, slotDefs);
+                  // Kicked off means gone. Shown rather than hidden, so a
+                  // name that vanished mid-draft has a visible reason.
+                  const locked = Boolean(p.team && lockedSet.has(p.team));
+                  const canDraft =
+                    isMyTurn && !locked && hasOpenSlotFor(p.position, myPicks, slotDefs);
                   return (
                     <div
                       key={p.id}
-                      className="grid grid-cols-[42px_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-t border-seam-soft px-3 py-2 first:border-t-0"
+                      className={`grid grid-cols-[42px_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-t border-seam-soft px-3 py-2 first:border-t-0 ${
+                        locked ? "opacity-45" : ""
+                      }`}
                     >
                       {/* Positional rank, e.g. RB14. The board is ordered by
                           points per game across positions, so these numbers
@@ -352,10 +362,12 @@ export function DraftRoom({
                         className={`w-16 shrink-0 rounded-lg border px-2 py-1.5 font-data text-[10px] uppercase tracking-wide ${
                           canDraft
                             ? "border-accent bg-accent font-semibold text-ground hover:opacity-90"
-                            : "border-seam text-ink-faint"
+                            : locked
+                              ? "border-crimson/40 text-crimson"
+                              : "border-seam text-ink-faint"
                         } disabled:cursor-not-allowed`}
                       >
-                        {pending === p.id ? "…" : canDraft ? "Draft" : "Full"}
+                        {pending === p.id ? "…" : canDraft ? "Draft" : locked ? "Locked" : "Full"}
                       </button>
                     </div>
                   );
