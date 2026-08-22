@@ -6,8 +6,22 @@ import { BROWSABLE_POSITIONS } from "@/lib/positions";
 
 const TABS = ["ALL", ...BROWSABLE_POSITIONS] as const;
 
+const SORTS = [
+  { value: "adp", label: "ADP" },
+  { value: "proj", label: "Projected" },
+  { value: "last", label: "Last season" },
+] as const;
+
 /** Position tabs and a debounced search box, both held in the URL. */
-export function PlayerFilters({ position, search }: { position: string; search: string }) {
+export function PlayerFilters({
+  position,
+  search,
+  sort,
+}: {
+  position: string;
+  search: string;
+  sort: string;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [term, setTerm] = useState(search);
@@ -32,8 +46,37 @@ export function PlayerFilters({ position, search }: { position: string; search: 
     return `/players?${next.toString()}`;
   }
 
+  function sortHref(next: string) {
+    const params2 = new URLSearchParams(params.toString());
+    if (next === "last") params2.delete("sort");
+    else params2.set("sort", next);
+    return `/players?${params2.toString()}`;
+  }
+
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3">
+      {/* Sort first: on a draft weekend "who goes next" is the question, and
+          that is ADP, not last season's box scores. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="label mr-1">Order by</span>
+        {SORTS.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => router.replace(sortHref(s.value), { scroll: false })}
+            aria-pressed={sort === s.value}
+            className={`shrink-0 rounded-full border px-3 py-1 font-data text-[11px] tracking-wide transition-colors ${
+              sort === s.value
+                ? "border-accent bg-accent font-semibold text-ground"
+                : "border-seam text-ink-dim hover:text-ink"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="flex flex-wrap gap-1.5">
         {TABS.map((tab) => (
           <button
@@ -59,6 +102,7 @@ export function PlayerFilters({ position, search }: { position: string; search: 
         aria-label="Search players"
         className="w-full rounded-lg border border-seam bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-accent sm:ml-auto sm:max-w-xs"
       />
+      </div>
     </div>
   );
 }

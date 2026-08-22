@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listRankedPlayers } from "@/lib/player-browser";
+import { listRankedPlayers, type PlayerSort } from "@/lib/player-browser";
 import { BROWSABLE_POSITIONS } from "@/lib/positions";
 import { positionColor } from "@/lib/rule-style";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
@@ -9,14 +9,20 @@ import { Shell } from "@/components/ui/Shell";
 
 export const metadata: Metadata = { title: "Players" };
 
+/** One template so the header and the rows can never drift apart. */
+const GRID =
+  "grid-cols-[42px_minmax(0,1fr)_50px_50px_54px] items-center gap-2 sm:gap-3 sm:grid-cols-[46px_minmax(0,1fr)_62px_62px_62px_66px]";
+
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pos?: string; q?: string }>;
+  searchParams: Promise<{ pos?: string; q?: string; sort?: string }>;
 }) {
-  const { pos, q } = await searchParams;
+  const { pos, q, sort: sortParam } = await searchParams;
   const position = pos && BROWSABLE_POSITIONS.includes(pos as never) ? pos : "ALL";
-  const { players, seasons } = await listRankedPlayers({ position, search: q });
+  const sort: PlayerSort =
+    sortParam === "adp" || sortParam === "proj" ? sortParam : "last";
+  const { players, seasons } = await listRankedPlayers({ position, search: q, sort });
 
   return (
     <Shell width="wide">
@@ -24,9 +30,11 @@ export default async function PlayersPage({
         <div>
           <h1 className="font-display text-4xl uppercase text-ink">Players</h1>
           <p className="mt-1 max-w-prose text-sm text-ink-dim">
-            Ranked by {seasons.previous} points per game, with {seasons.current} filling in beside
-            it as games are played. <span className="text-flare">Proj</span> is Sleeper&apos;s{" "}
-            {seasons.current} projection, with its average draft position underneath.
+            {sort === "adp"
+              ? "In draft order — average draft position across Sleeper leagues, which is what the draft board and auto-draft use."
+              : sort === "proj"
+                ? `By Sleeper's ${seasons.current} projected points per game.`
+                : `By ${seasons.previous} PPR points per game, with ${seasons.current} filling in beside it as games are played.`}
           </p>
         </div>
         <span className="font-data text-[11px] text-ink-faint">
@@ -34,15 +42,18 @@ export default async function PlayersPage({
         </span>
       </header>
 
-      <PlayerFilters position={position} search={q ?? ""} />
+      <PlayerFilters position={position} search={q ?? ""} sort={sort} />
 
       <section className="overflow-hidden rounded-2xl border border-seam bg-surface">
-        <header className="grid grid-cols-[46px_minmax(0,1fr)_58px_58px_58px] items-center gap-2 border-b border-seam-soft px-4 py-2.5 sm:gap-3 sm:grid-cols-[46px_minmax(0,1fr)_76px_76px_76px]">
+        <header className={`grid ${GRID} border-b border-seam-soft px-4 py-2.5`}>
           <span className="label">Rank</span>
           <span className="label">Player</span>
           <span className="label text-right">{seasons.previous}</span>
-          <span className="label text-right">{seasons.current}</span>
+          {/* This season is empty until games are played, and it is the
+              least useful column on a phone, so it is the one that goes. */}
+          <span className="label hidden text-right sm:block">{seasons.current}</span>
           <span className="label text-right">Proj</span>
+          <span className="label text-right">ADP</span>
         </header>
 
         {players.length === 0 && (
@@ -55,7 +66,7 @@ export default async function PlayersPage({
           <Link
             key={p.id}
             href={`/players/${p.id}`}
-            className="grid grid-cols-[46px_minmax(0,1fr)_58px_58px_58px] items-center gap-2 border-t border-seam-soft px-4 py-2.5 transition-colors first:border-t-0 hover:bg-surface-raised sm:gap-3 sm:grid-cols-[46px_minmax(0,1fr)_76px_76px_76px]"
+            className={`grid ${GRID} border-t border-seam-soft px-4 py-2.5 transition-colors first:border-t-0 hover:bg-surface-raised`}
           >
             <span
               className="tabular-score text-[11px]"
@@ -82,8 +93,13 @@ export default async function PlayersPage({
             </span>
 
             <SeasonCell ppg={p.lastSeason?.ppg ?? p.ppg} games={p.lastSeason?.games_played ?? null} />
-            <SeasonCell ppg={p.thisSeason?.ppg ?? null} games={p.thisSeason?.games_played ?? null} />
-            <SeasonCell ppg={p.proj_ppg} games={null} adp={p.adp} accent />
+            <span className="hidden sm:block">
+              <SeasonCell ppg={p.thisSeason?.ppg ?? null} games={p.thisSeason?.games_played ?? null} />
+            </span>
+            <SeasonCell ppg={p.proj_ppg} games={null} accent />
+            <span className={`tabular-score text-right text-sm ${sort === "adp" ? "text-ink" : "text-ink-dim"}`}>
+              {p.adp != null ? p.adp.toFixed(1) : "—"}
+            </span>
           </Link>
         ))}
       </section>
@@ -94,12 +110,10 @@ export default async function PlayersPage({
 function SeasonCell({
   ppg,
   games,
-  adp,
   accent,
 }: {
   ppg: number | null;
   games: number | null;
-  adp?: number | null;
   accent?: boolean;
 }) {
   if (ppg === null) {
@@ -112,9 +126,6 @@ function SeasonCell({
       </span>
       {games ? (
         <span className="block font-data text-[10px] text-ink-faint">{games}g</span>
-      ) : null}
-      {adp != null ? (
-        <span className="block font-data text-[10px] text-ink-faint">ADP {adp.toFixed(0)}</span>
       ) : null}
     </span>
   );

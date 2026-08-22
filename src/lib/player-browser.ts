@@ -24,6 +24,15 @@ export type RankedPlayer = Player & {
 
 export { BROWSABLE_POSITIONS } from "@/lib/positions";
 
+export type PlayerSort = "adp" | "proj" | "last";
+
+/** Column and direction per sort. ADP counts up; the rest count down. */
+const SORTS: Record<PlayerSort, { column: string; ascending: boolean }> = {
+  adp: { column: "adp", ascending: true },
+  proj: { column: "proj_ppg", ascending: false },
+  last: { column: "ppg", ascending: false },
+};
+
 /** Which season is "this year" and which is "last year", per Sleeper. */
 export async function resolveSeasons(): Promise<{ current: number; previous: number }> {
   try {
@@ -45,20 +54,27 @@ export async function resolveSeasons(): Promise<{ current: number; previous: num
 export async function listRankedPlayers({
   position,
   search,
+  sort = "last",
   limit = 200,
 }: {
   position?: string;
   search?: string;
+  sort?: PlayerSort;
   limit?: number;
 }): Promise<{ players: RankedPlayer[]; seasons: { current: number; previous: number } }> {
   const supabase = await createClient();
   const seasons = await resolveSeasons();
 
+  // Nulls last in every case: a player with no ADP, no projection or no
+  // production last season should sit behind everyone who has one rather
+  // than lead the list because the column is empty.
+  const ordering = SORTS[sort] ?? SORTS.last;
+
   let query = supabase
     .from("players")
     .select("*")
     .in("position", [...BROWSABLE_POSITIONS])
-    .order("ppg", { ascending: false, nullsFirst: false })
+    .order(ordering.column, { ascending: ordering.ascending, nullsFirst: false })
     .order("full_name", { ascending: true })
     .limit(limit);
 

@@ -504,10 +504,13 @@ quarterbacks should not. Switching to PPR moved Puka Nacua from 19.4 to
 stayed at exactly 22.0.
 ## Player rankings and news
 
-`/players` ranks the pool by last completed season's PPR points per game, with
-this season's beside it as games are played. Click through to
-`/players/[id]` for both seasons' totals, a week-by-week game log, and
-recent news. Player names on the draft board and on the matchup rosters
+`/players` lists the pool with an **Order by** control: ADP, Sleeper's
+projection, or last completed season's PPR points per game. ADP is the one
+to browse before a draft — it is the order the board and auto-draft
+themselves use, so the list matches what will actually happen. Every sort
+puts players missing that value last rather than letting an empty column
+lead. Click through to `/players/[id]` for both seasons' totals, a
+week-by-week game log, and recent news. Player names on the draft board and on the matchup rosters
 link straight there.
 
 **Where each number comes from.** Completed seasons are pulled wholesale
