@@ -58,8 +58,9 @@ in the Supabase SQL Editor:
 | `0006_projections.sql` | `player_projections` plus `players.proj_ppg` / `proj_points` / `adp` for Sleeper's season projections and average draft position |
 | `0007_reveal_and_lock.sql` | `weeks.locks_at` (the week's first kickoff) and the `week_reveals` table behind the face-down card |
 | `0008_nfl_schedule.sql` | The `nfl_games` table behind `/schedule` — kickoff times, networks, venues and scores |
+| `0009_game_time_tbd.sql` | `nfl_games.time_valid`, so flex-scheduled games show "Time TBD" rather than a midnight placeholder |
 
-Only `0003` through `0008` are safe to re-run: they guard every statement
+Only `0003` through `0009` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -309,9 +310,25 @@ Times are formatted client-side. The server would have to pick a timezone,
 and a countdown or a kickoff time should read correctly for whichever
 manager is looking at it.
 
-One join that matters: ESPN abbreviates Washington `WSH` and Sleeper uses
-`WAS`, so team codes are normalised to Sleeper's on the way in and
-`nfl_games.home_team` lines up with `players.team`.
+Two upstream quirks worth knowing about.
+
+ESPN abbreviates Washington `WSH` where Sleeper uses `WAS`, so team codes
+are normalised on the way in and `nfl_games.home_team` lines up with
+`players.team`.
+
+And days are bucketed by their **Eastern** date, never the UTC one. A US
+night game is already past midnight in UTC — New England at Seattle kicks
+at 8:20 PM Eastern on a Wednesday and is stored as `2026-09-10T00:20Z` —
+so reading the date off the ISO string puts roughly a fifth of the season
+on the wrong day. Eastern is also the right bucket conceptually: the
+league schedules in it, and "Thursday Night Football" is a Thursday game
+wherever it is watched. Kickoff times still render in the viewer's own
+zone and name it, so an Eastern day header and a Pacific time cannot look
+like they disagree.
+
+Games the NFL has not fixed a time for yet — all of Week 18 until late in
+the season — carry `time_valid = false` and show "Time TBD" instead of the
+midnight placeholder ESPN sends.
 
 ## House Rules
 

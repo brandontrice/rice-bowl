@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatDayKey } from "@/lib/nfl-date";
 import {
   byDay,
   defaultWeek,
@@ -12,17 +13,6 @@ import { GameRowCard } from "@/components/GameRowCard";
 import { Shell } from "@/components/ui/Shell";
 
 export const metadata: Metadata = { title: "Schedule" };
-
-function formatDay(day: string) {
-  if (day === "tbd") return "Date to be confirmed";
-  // Parsed as UTC noon so the label can't slip a day either way.
-  const d = new Date(`${day}T12:00:00Z`);
-  return d.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 export default async function SchedulePage({
   searchParams,
@@ -119,14 +109,14 @@ export default async function SchedulePage({
       {team ? (
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {games.map((g) => (
-            <GameRowCard key={g.id} game={g} />
+            <GameRowCard key={g.id} game={g} showDate />
           ))}
         </div>
       ) : (
         days.map(({ day, games: dayGames }) => (
           <section key={day} className="flex flex-col gap-2.5">
             <header className="flex items-center gap-3">
-              <span className="label shrink-0">{formatDay(day)}</span>
+              <span className="label shrink-0">{formatDayKey(day)}</span>
               <span className="h-px flex-1 bg-seam" />
               <span className="font-data text-[10px] text-ink-faint">{dayGames.length}</span>
             </header>

@@ -29,6 +29,7 @@ type EspnEvent = {
   week?: { number?: number };
   competitions?: {
     neutralSite?: boolean;
+    timeValid?: boolean;
     venue?: { fullName?: string };
     competitors?: EspnCompetitor[];
     status?: { type?: { state?: string; shortDetail?: string } };
@@ -53,6 +54,7 @@ export type GameRow = {
   network: string | null;
   venue: string | null;
   neutral_site: boolean;
+  time_valid: boolean;
   updated_at: string;
 };
 
@@ -89,6 +91,9 @@ function toRow(event: EspnEvent, season: number, week: number): GameRow | null {
     network,
     venue: comp.venue?.fullName ?? null,
     neutral_site: Boolean(comp.neutralSite),
+    // false when the NFL has not fixed a kick time yet — the whole of
+    // Week 18 sits like this until late in the season.
+    time_valid: comp.timeValid !== false,
     updated_at: new Date().toISOString(),
   };
 }

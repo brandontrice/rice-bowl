@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveSeasons } from "@/lib/player-browser";
 import { REGULAR_SEASON_WEEKS } from "@/lib/nfl-schedule";
 import type { GameRow } from "@/lib/nfl-schedule";
+import { easternDay } from "@/lib/nfl-date";
 
 export type Game = Omit<GameRow, "updated_at">;
 
@@ -36,7 +37,7 @@ export async function getWeekGames(season: number, week: number): Promise<Game[]
   const { data } = await supabase
     .from("nfl_games")
     .select(
-      "id, season, week, season_type, kickoff_at, home_team, away_team, home_name, away_name, home_score, away_score, status, status_detail, network, venue, neutral_site",
+      "id, season, week, season_type, kickoff_at, home_team, away_team, home_name, away_name, home_score, away_score, status, status_detail, network, venue, neutral_site, time_valid",
     )
     .eq("season", season)
     .eq("week", week)
@@ -49,7 +50,7 @@ export async function getTeamGames(season: number, team: string): Promise<Game[]
   const { data } = await supabase
     .from("nfl_games")
     .select(
-      "id, season, week, season_type, kickoff_at, home_team, away_team, home_name, away_name, home_score, away_score, status, status_detail, network, venue, neutral_site",
+      "id, season, week, season_type, kickoff_at, home_team, away_team, home_name, away_name, home_score, away_score, status, status_detail, network, venue, neutral_site, time_valid",
     )
     .eq("season", season)
     .or(`home_team.eq.${team},away_team.eq.${team}`)
@@ -71,30 +72,7 @@ export async function getTeams(season: number): Promise<string[]> {
   return [...teams].sort();
 }
 
-/**
- * The NFL's own idea of what day a game is on.
- *
- * Kickoffs are stored in UTC, and a US night game is already past midnight
- * there: New England at Seattle kicks at 8:20 PM Eastern on Wednesday and
- * is stored as 2026-09-10T00:20Z. Slicing the ISO string put it — and
- * every other primetime game — on the following day.
- *
- * Eastern is the right bucket rather than the viewer's own timezone,
- * because the league schedules in it. "Thursday Night Football" is a
- * Thursday game whether you watch it from Denver or Dublin, and it is how
- * every schedule anyone would compare this against is laid out.
- */
-const EASTERN_DAY = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "America/New_York",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-export function easternDay(iso: string): string {
-  return EASTERN_DAY.format(new Date(iso));
-}
-
+// Bucketed by the Eastern date, not the UTC one — see nfl-date.ts.
 /** Groups a week's games under the day they're played. */
 export function byDay(games: Game[]): { day: string; games: Game[] }[] {
   const groups = new Map<string, Game[]>();

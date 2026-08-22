@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { easternDay, formatDayKey } from "@/lib/nfl-date";
 import type { Game } from "@/lib/schedule-data";
 
 /** ESPN's logo CDN, keyed by abbreviation. WAS is WSH over there. */
@@ -63,7 +63,14 @@ function TeamSide({
  * the manager is actually in — the server would have to pick one, and this
  * league does not agree on a home city.
  */
-export function GameRowCard({ game }: { game: Game }) {
+export function GameRowCard({
+  game,
+  showDate = false,
+}: {
+  game: Game;
+  /** Team view has no day headers, so each card carries its own date. */
+  showDate?: boolean;
+}) {
   const kickoff = game.kickoff_at ? new Date(game.kickoff_at) : null;
   const final = game.status === "post";
   const live = game.status === "in";
@@ -93,6 +100,9 @@ export function GameRowCard({ game }: { game: Game }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-seam-soft pt-2 font-data text-[10px] text-ink-faint">
+        {showDate && game.kickoff_at && (
+          <span className="text-ink">{formatDayKey(easternDay(game.kickoff_at), "short")}</span>
+        )}
         {live ? (
           <span className="flex items-center gap-1.5 text-jade">
             <span className="animate-waiting h-1.5 w-1.5 rounded-full bg-jade" />
@@ -101,7 +111,11 @@ export function GameRowCard({ game }: { game: Game }) {
         ) : final ? (
           <span className="text-ink-dim">Final</span>
         ) : (
-          kickoff && (
+          kickoff &&
+          // The NFL flexes late-season games, and ESPN carries those with a
+          // midnight placeholder. Printing it would claim a kickoff time
+          // nobody has set.
+          (game.time_valid ? (
             // Day headers are bucketed by Eastern, which is how the league
             // schedules; the time is the viewer's own, so it names its zone
             // rather than leaving the two looking like they disagree.
@@ -112,17 +126,14 @@ export function GameRowCard({ game }: { game: Game }) {
                 timeZoneName: "short",
               })}
             </span>
-          )
+          ) : (
+            <span className="text-flare">Time TBD</span>
+          ))
         )}
         {game.network && <span>{game.network}</span>}
         {game.venue && <span className="truncate">{game.venue}</span>}
         {game.neutral_site && <span className="text-flare">Neutral site</span>}
-        <Link
-          href={`/schedule?team=${game.away_team}`}
-          className="ml-auto text-ink-faint underline-offset-2 hover:text-ink hover:underline"
-        >
-          Wk {game.week}
-        </Link>
+        <span className="ml-auto">Wk {game.week}</span>
       </div>
     </article>
   );
