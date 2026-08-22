@@ -47,6 +47,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     { data: picksRaw },
     { data: scoreRows },
     { data: reveals },
+    { data: readyRows },
   ] = await Promise.all([
     getManagers(),
     getCurrentManager(),
@@ -69,6 +70,9 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
       ? Promise.resolve({ data: [] })
       : supabase.from("weekly_scores").select("*").eq("week_id", weekId),
     supabase.from("week_reveals").select("manager_id").eq("week_id", weekId),
+    draftRow
+      ? supabase.from("draft_ready").select("manager_id").eq("draft_id", draftRow.id)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const idx = (siblingWeeks ?? []).findIndex((w) => w.id === weekId);
@@ -98,6 +102,10 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     week.status === "complete" ||
     !currentManager ||
     (reveals ?? []).some((r) => r.manager_id === currentManager.id);
+
+  const readySet = new Set((readyRows ?? []).map((r) => r.manager_id as string));
+  const iAmReady = Boolean(currentManager && readySet.has(currentManager.id));
+  const notReady = managers.filter((m) => !readySet.has(m.id));
 
   const picks = (picksRaw ?? []) as (DraftPick & { players: Player | null })[];
   const scoreMap = new Map<string, number>();
@@ -172,17 +180,51 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
       </RuleReveal>
 
       {draftNotDone ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-seam p-10 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-seam p-10 text-center">
           <p className="text-sm text-ink-dim">
             {draftRow?.status === "active"
               ? "The draft is underway."
-              : "The draft hasn't started yet."}
+              : iAmReady
+                ? `Waiting on ${notReady.map((m) => m.display_name).join(" and ")} to start.`
+                : "Both managers have to start the draft before anyone can pick."}
           </p>
+
+          {/* Who has started, visible without opening the draft room —
+              otherwise the only way to know is to go and look. */}
+          {draftRow?.status === "pending" && managers.length === 2 && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {managers.map((m) => {
+                const isReady = readySet.has(m.id);
+                return (
+                  <span
+                    key={m.id}
+                    className="flex items-center gap-2 rounded-full border px-3 py-1 font-data text-[10px] uppercase tracking-[0.1em]"
+                    style={{
+                      color: isReady ? m.accent_color : "var(--ink-faint)",
+                      borderColor: isReady
+                        ? `color-mix(in srgb, ${m.accent_color} 45%, transparent)`
+                        : "var(--seam)",
+                    }}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${isReady ? "" : "animate-waiting"}`}
+                      style={{ backgroundColor: isReady ? m.accent_color : "var(--ink-faint)" }}
+                    />
+                    {m.display_name} · {isReady ? "Ready" : "Not ready"}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           <Link
             href={`/week/${weekId}/draft`}
             className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-ground hover:opacity-90"
           >
-            {draftRow?.status === "active" ? "Rejoin the draft" : "Enter the draft room"}
+            {/* Deliberately not "Start draft" — this only navigates. The
+                lobby owns that action, and two buttons with one label
+                reading differently is worse than one extra word here. */}
+            {draftRow?.status === "active" ? "Rejoin the draft" : "Open the draft room"}
           </Link>
         </div>
       ) : (
