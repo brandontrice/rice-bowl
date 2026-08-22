@@ -56,8 +56,9 @@ in the Supabase SQL Editor:
 | `0004_pick_clock.sql` | `drafts.deadline_at` / `pick_seconds`, the `arm_draft_clock()` and `auto_pick()` functions, and `make_pick()` redefined to roll the clock forward |
 | `0005_player_stats_and_news.sql` | `players.espn_id`, the `player_season_stats` / `player_week_stats` tables, and the `player_season_to_date` view behind the rankings browser |
 | `0006_projections.sql` | `player_projections` plus `players.proj_ppg` / `proj_points` / `adp` for Sleeper's season projections and average draft position |
+| `0007_reveal_and_lock.sql` | `weeks.locks_at` (the week's first kickoff) and the `week_reveals` table behind the face-down card |
 
-Only `0003` through `0006` are safe to re-run: they guard every statement
+Only `0003` through `0007` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -235,8 +236,8 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
 
 ## How a week works
 
-1. **Home (`/`)** resolves to the current NFL week, dealing its House Rule
-   and draft the first time either manager visits.
+1. **Home (`/`)** resolves to the current NFL week and shows its House
+   Rule card face down until you turn it over.
 2. **Draft room (`/week/[id]/draft`)** — snake draft, 8 slots
    (QB/RB/RB/WR/WR/TE/FLEX/DST), synced live via Supabase Realtime. The
    pool is ordered by average draft position and filterable by position or
@@ -257,6 +258,37 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
    full wager ledger.
 5. **Deck (`/deck`)** — all 20 cards, with the ones already dealt this
    season marked.
+
+## The week's rhythm
+
+| When | What happens |
+| --- | --- |
+| **Tuesday** | Sleeper's `state.week` rolls. Last week finalises, a Bowl Point is awarded, and the next card is dealt **face down**. |
+| **Tue → kickoff** | Both managers turn their card over, then draft under it. |
+| **First kickoff** | The draft deadline. Usually Thursday night. |
+| **Thu → Mon** | Games. Scores accumulate while anyone has the matchup open. |
+| **Tuesday** | Round again. |
+
+The card is dealt by the cron rather than by whoever visits first, so it
+is waiting when you arrive rather than being created by your page load.
+It stays put until the week rolls — the rule is seeded from the season and
+week number, so it cannot be re-rolled by refreshing.
+
+**The reveal is an act, not a page load.** The card arrives face down with
+a chevron back and turns over when you press it. Recorded per manager on
+the server rather than in `sessionStorage`, so it survives a new tab, a
+new device, and a cleared browser — a card you can re-flip in an incognito
+window is not really a reveal. The draft room redirects back to the
+matchup page if you have not turned yours, since the House Rule is printed
+at the top of it.
+
+**The deadline is the real first kickoff**, not a hardcoded Thursday.
+[`schedule.ts`](src/lib/schedule.ts) takes the earliest game of the week
+from ESPN's scoreboard, because a fixed "Thursday 8:15 PM" is wrong more
+often than you would think: in 2026 Week 1 opens on a **Wednesday**, so
+does Week 12 on Thanksgiving, and Week 18 has no Thursday game at all.
+The countdown renders client-side so it reads the same wherever either
+manager happens to be.
 
 ## House Rules
 

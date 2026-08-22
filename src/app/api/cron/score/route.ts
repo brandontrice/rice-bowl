@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient, verifyCronRequest } from "@/lib/supabase/service";
 import { scoreWeek } from "@/lib/score-week";
+import { ensureCurrentWeek } from "@/lib/ensure-week";
 
 /**
  * Vercel Cron: rescore every week that isn't finished yet.
@@ -16,6 +17,14 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServiceClient();
+
+  // Deal the new week before scoring the old one. Sleeper's state.week
+  // rolls on Tuesday; doing this here means the card is face down and
+  // waiting whenever the managers next open the app, rather than being
+  // created by whoever happens to visit first.
+  const dealt = await ensureCurrentWeek(supabase).catch((err) => ({
+    error: err instanceof Error ? err.message : "deal failed",
+  }));
 
   const { data: weeks, error } = await supabase
     .from("weeks")
@@ -37,5 +46,9 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, scored: results });
+  return NextResponse.json({
+    ok: true,
+    dealt: "week" in dealt && dealt.week ? dealt.week.week_number : (dealt.error ?? null),
+    scored: results,
+  });
 }

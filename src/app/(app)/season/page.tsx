@@ -133,7 +133,7 @@ export default async function SeasonPage() {
               <Link
                 key={w.id}
                 href={`/week/${w.id}`}
-                className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 border-t border-seam-soft px-4 py-3 transition-colors first:border-t-0 hover:bg-surface-raised"
+                className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 border-t border-seam-soft px-4 py-3 transition-colors first:border-t-0 hover:bg-surface-raised hover:pl-5"
               >
                 <span className="font-data text-[11px] text-ink-faint">WK {w.week_number}</span>
                 <span className="min-w-0">

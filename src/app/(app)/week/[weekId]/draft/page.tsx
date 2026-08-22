@@ -35,6 +35,17 @@ export default async function DraftPage({
   const currentManager = await getCurrentManager();
   if (!currentManager) redirect("/login");
 
+  // You draft under the rule, so you see the rule first. Without this the
+  // reveal is skippable by going straight to the draft room, which also
+  // spoils it — the House Rule is printed at the top of this page.
+  const { data: reveal } = await supabase
+    .from("week_reveals")
+    .select("manager_id")
+    .eq("week_id", weekId)
+    .eq("manager_id", currentManager.id)
+    .maybeSingle();
+  if (!reveal) redirect(`/week/${weekId}`);
+
   const managers = await getManagers();
 
   // Never block the render on this. A stale cache means a multi-megabyte

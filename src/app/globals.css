@@ -193,3 +193,142 @@ body {
     pick-land 240ms ease-out both,
     pick-pulse 1100ms ease-out 120ms both;
 }
+
+/* ─── The reveal ──────────────────────────────────────────────────────
+   The week's card arrives face down and gets turned over once. It is the
+   one moment in a week that is pure ceremony, so it gets the longest
+   animation in the app — everything else stays under 700ms. */
+
+.flip-scene {
+  perspective: 1600px;
+}
+
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.flip-card[data-face="up"] {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* The chevron weave on the back of every card in the deck. */
+.card-back {
+  background-color: var(--surface);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--goalpost) 9%, transparent) 0 6px,
+      transparent 6px 12px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--ink) 4%, transparent) 0 6px,
+      transparent 6px 12px
+    );
+}
+
+/* A slow sheen crossing the face-down card, so it reads as waiting to be
+   touched rather than as an empty placeholder. */
+@keyframes card-sheen {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+.card-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--goalpost) 16%, transparent),
+    transparent
+  );
+  animation: card-sheen 3.6s ease-in-out infinite;
+}
+
+/* ─── Small life ──────────────────────────────────────────────────────
+   Hover and entrance behaviour. Deliberately quiet individually; the
+   point is that the whole surface feels responsive rather than any one
+   thing being showy. */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 420ms cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+.lift {
+  transition:
+    transform 200ms ease-out,
+    border-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px -12px rgb(0 0 0 / 0.7);
+}
+
+/* The on-the-clock panel breathes while it is your turn. */
+@keyframes on-clock {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+.animate-on-clock {
+  animation: on-clock 2.1s ease-out infinite;
+}
+
+/* Awarded a Bowl Point. Plays once, on the week that just finalised. */
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) rotate(-9deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-9deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-9deg);
+  }
+}
+
+.animate-stamp {
+  animation: stamp-in 620ms cubic-bezier(0.2, 1.1, 0.3, 1) both;
+}

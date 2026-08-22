@@ -3,6 +3,7 @@ import { fetchSleeperState } from "@/lib/sleeper";
 import { dealHouseRule } from "@/lib/house-rules";
 import { mulberry32, seedFromWeek, pick as rngPick } from "@/lib/prng";
 import { buildSnakeOrder, derivePoolLock } from "@/lib/draft";
+import { fetchWeekKickoff } from "@/lib/schedule";
 import type { Week, Draft } from "@/types/database";
 
 export type EnsureWeekResult =
@@ -64,11 +65,17 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
   const sniperManagerId = houseRule.key === "sniper" ? rngPick(rng, managerIds) : null;
   const flexPosition = houseRule.key === "flex_flip" ? "WR" : null;
 
+  // The draft deadline is the week's first kickoff, looked up once when
+  // the week is created. Null is fine — the UI simply omits the countdown
+  // rather than inventing a Thursday that might be wrong.
+  const locksAt = await fetchWeekKickoff(seasonYear, weekNumber);
+
   const { data: week, error: weekError } = await supabase
     .from("weeks")
     .insert({
       season_id: season.id,
       week_number: weekNumber,
+      locks_at: locksAt,
       house_rule_key: houseRule.key,
       house_rule_seed: seed,
       status: "drafting",

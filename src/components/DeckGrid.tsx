@@ -19,7 +19,7 @@ export function DeckGrid({
   return (
     <div className={className}>
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        {HOUSE_RULES.map((rule) => {
+        {HOUSE_RULES.map((rule, i) => {
           const style = RULE_STYLE[rule.enforcement];
           const dealtWeek = dealtByKey?.get(rule.key);
           const isDealt = dealtWeek !== undefined;
@@ -27,8 +27,12 @@ export function DeckGrid({
           return (
             <article
               key={rule.key}
-              className="relative flex min-h-[132px] flex-col gap-1.5 overflow-hidden rounded-xl border bg-surface p-3.5"
+              className="lift animate-rise relative flex min-h-[132px] flex-col gap-1.5 overflow-hidden rounded-xl border bg-surface p-3.5"
               style={{
+                // Staggered so the deck deals itself in rather than landing
+                // all at once, capped so the last card isn't still arriving
+                // a second later.
+                animationDelay: `${Math.min(i * 22, 420)}ms`,
                 borderColor: isDealt
                   ? `color-mix(in srgb, ${style.color} 60%, transparent)`
                   : "var(--seam)",

@@ -191,7 +191,7 @@ export function DraftRoom({
 
       <div
         className={`rounded-2xl border p-5 text-center ${
-          isMyTurn ? "border-accent bg-accent/10" : "border-seam bg-surface"
+          isMyTurn ? "animate-on-clock border-accent bg-accent/10" : "border-seam bg-surface"
         }`}
       >
         {draft.status === "complete" ? (

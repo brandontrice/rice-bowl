@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentManager, getManagers, getBowlStandings } from "@/lib/data";
 import { HouseRuleCard } from "@/components/HouseRuleCard";
 import { DealtCard } from "@/components/DealtCard";
+import { RuleReveal } from "@/components/RuleReveal";
+import { KickoffCountdown } from "@/components/KickoffCountdown";
 import { HeadToHead } from "@/components/HeadToHead";
 import { RosterGrid } from "@/components/RosterGrid";
 import { TrashTalkBoard } from "@/components/TrashTalkBoard";
@@ -43,6 +45,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     { data: wagers },
     { data: picksRaw },
     { data: scoreRows },
+    { data: reveals },
   ] = await Promise.all([
     getManagers(),
     getCurrentManager(),
@@ -64,6 +67,7 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
     draftNotDone
       ? Promise.resolve({ data: [] })
       : supabase.from("weekly_scores").select("*").eq("week_id", weekId),
+    supabase.from("week_reveals").select("manager_id").eq("week_id", weekId),
   ]);
 
   const idx = (siblingWeeks ?? []).findIndex((w) => w.id === weekId);
@@ -73,6 +77,13 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
   const sniperManager = week.sniper_manager_id
     ? (managers.find((m) => m.id === week.sniper_manager_id) ?? null)
     : null;
+
+  // A past week is history, not a surprise — only the current week's card
+  // is worth withholding, and only from someone who hasn't turned it yet.
+  const hasRevealed =
+    week.status === "complete" ||
+    !currentManager ||
+    (reveals ?? []).some((r) => r.manager_id === currentManager.id);
 
   const picks = (picksRaw ?? []) as (DraftPick & { players: Player | null })[];
   const scoreMap = new Map<string, number>();
@@ -119,8 +130,13 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
         ) : (
           <span />
         )}
-        <span className="font-display text-lg uppercase tracking-wide text-ink">
-          Week {week.week_number}
+        <span className="flex flex-col items-center gap-0.5">
+          <span className="font-display text-lg uppercase tracking-wide text-ink">
+            Week {week.week_number}
+          </span>
+          {week.locks_at && (
+            <KickoffCountdown locksAt={week.locks_at} drafted={!draftNotDone} />
+          )}
         </span>
         {nextWeek ? (
           <Link href={`/week/${nextWeek.id}`} className="font-data text-ink-dim hover:text-ink">
@@ -131,9 +147,15 @@ export default async function WeekPage({ params }: { params: Promise<{ weekId: s
         )}
       </nav>
 
-      <DealtCard weekId={weekId}>
-        <HouseRuleCard week={week} sniperManager={sniperManager} />
-      </DealtCard>
+      <RuleReveal
+        weekId={weekId}
+        weekNumber={week.week_number}
+        revealed={hasRevealed}
+      >
+        <DealtCard weekId={weekId}>
+          <HouseRuleCard week={week} sniperManager={sniperManager} />
+        </DealtCard>
+      </RuleReveal>
 
       {draftNotDone ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-seam p-10 text-center">

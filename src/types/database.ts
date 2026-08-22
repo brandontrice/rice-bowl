@@ -39,6 +39,7 @@ export type Week = {
   winner_manager_id: string | null;
   home_score: number | null;
   away_score: number | null;
+  locks_at: string | null;
   created_at: string;
 };
 
