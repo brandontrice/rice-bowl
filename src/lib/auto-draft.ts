@@ -35,15 +35,27 @@ export async function pickBestAvailable(
   const slotDefs = rosterSlotDefs(week);
   const restriction = poolRestriction(week);
 
-  // Ordered by points per game, NOT pos_rank. pos_rank is per position, so
-  // every position's number one shares rank 1 — ordering by it would put
-  // the top defense (~10 ppg) ahead of every RB2 and WR2 on the board.
-  // Unranked players sort last, which is right: those are the ones Sleeper
-  // has no production for.
+  // Ordered by average draft position: lowest ADP first, because ADP is
+  // consensus draft order across Sleeper leagues and is the closest thing
+  // to "who should go next" that exists. It is forward-looking, where
+  // last season's points per game is not — the two disagree meaningfully
+  // (McCaffrey is RB1 on 2025 production but 5th by ADP).
+  //
+  // Not every player has one, so the fallbacks matter: projection first,
+  // then last season's production, then name for stability. Players with
+  // no ADP sort behind every player who has one, which is correct — a
+  // player nobody drafts in consensus should not go ahead of one who does.
+  // Team defenses do carry an ADP and settle around pick 130 on their own,
+  // which is where a real draft puts them.
+  //
+  // Deliberately not pos_rank: that is per position, so every position's
+  // number one shares rank 1 and the top defense would outrank every RB2.
   const { data: playersRaw } = await supabase
     .from("players")
     .select("*")
     .in("position", FANTASY_POSITIONS)
+    .order("adp", { ascending: true, nullsFirst: false })
+    .order("proj_ppg", { ascending: false, nullsFirst: false })
     .order("ppg", { ascending: false, nullsFirst: false })
     .order("full_name", { ascending: true });
 

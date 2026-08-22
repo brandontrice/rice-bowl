@@ -51,13 +51,16 @@ export default async function DraftPage({
     });
   }
 
-  // Ordered by points per game, not pos_rank — pos_rank is per position, so
-  // every position's number one shares rank 1 and ordering by it would put
-  // the top defense (~10 ppg) above every RB2 and WR2 on the board.
+  // Same order the auto-draft uses — see pickBestAvailable(). "Best
+  // available" has to mean one thing: if the board ranked players
+  // differently from what the clock takes when it runs out, the tab would
+  // be lying about what happens next.
   const { data: playersRaw } = await supabase
     .from("players")
     .select("*")
     .in("position", FANTASY_POSITIONS)
+    .order("adp", { ascending: true, nullsFirst: false })
+    .order("proj_ppg", { ascending: false, nullsFirst: false })
     .order("ppg", { ascending: false, nullsFirst: false })
     .order("full_name", { ascending: true });
 

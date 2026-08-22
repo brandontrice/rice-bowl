@@ -99,9 +99,9 @@ export function DraftRoom({
   const pickedIds = new Set(picks.map((p) => p.player_id));
   const term = search.trim().toLowerCase();
 
-  // The pool arrives pre-sorted by production rank from the server. It used
-  // to be alphabetical, which made finding the best available player during
-  // a live draft effectively impossible.
+  // The pool arrives pre-sorted by average draft position from the server,
+  // matching what the clock takes on an expiry. It used to be alphabetical,
+  // which made finding the best available player mid-draft impossible.
   const filtered = players
     .filter((p) => !pickedIds.has(p.id))
     .filter((p) => positionTab === "ALL" || p.position === positionTab)
@@ -328,17 +328,21 @@ export function DraftRoom({
                           {p.games_played ? ` · ${p.games_played}g` : ""}
                         </span>
                       </span>
-                      {/* Last season's actual, then this season's projection.
-                          The board still orders by actual — projections are
-                          shown to inform the pick, not to make it. */}
+                      {/* ADP leads because the board is ordered by it, so the
+                          sort has to be legible; projection and last
+                          season's actual sit underneath as the reasoning. */}
                       <span className="w-20 text-right">
-                        <span className="tabular-score block text-xs text-ink-dim">
-                          {p.ppg !== null ? p.ppg.toFixed(1) : "—"}
-                          <span className="ml-1 text-ink-faint">act</span>
+                        <span className="tabular-score block text-xs text-ink">
+                          {p.adp !== null ? p.adp.toFixed(1) : "—"}
+                          <span className="ml-1 text-ink-faint">adp</span>
                         </span>
-                        <span className="tabular-score block text-xs text-flare">
+                        <span className="tabular-score block text-[11px] text-flare">
                           {p.proj_ppg !== null ? p.proj_ppg.toFixed(1) : "—"}
                           <span className="ml-1 text-ink-faint">proj</span>
+                        </span>
+                        <span className="tabular-score block text-[11px] text-ink-dim">
+                          {p.ppg !== null ? p.ppg.toFixed(1) : "—"}
+                          <span className="ml-1 text-ink-faint">act</span>
                         </span>
                       </span>
                       <button
@@ -359,7 +363,7 @@ export function DraftRoom({
               </div>
 
               <p className="text-center font-data text-[10px] text-ink-faint">
-                Ranked by points per game &middot; showing {filtered.length} of{" "}
+                Ordered by average draft position &middot; showing {filtered.length} of{" "}
                 {players.length - pickedIds.size}
               </p>
             </>

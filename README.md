@@ -211,7 +211,7 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
    and draft the first time either manager visits.
 2. **Draft room (`/week/[id]/draft`)** — snake draft, 8 slots
    (QB/RB/RB/WR/WR/TE/FLEX/DST), synced live via Supabase Realtime. The
-   pool is ranked by season points per game and filterable by position or
+   pool is ordered by average draft position and filterable by position or
    by "fills a slot". The week's House Rule may restrict the pool (e.g.
    Division Lockdown), change a slot's eligibility (Flex Flip), hide the
    opponent's board (Blind Draft), or add a pre-draft action (Sniper).
@@ -290,12 +290,15 @@ Projections show up in three places: a third card on the player profile
 column on the rankings list with ADP underneath, and a second line on
 each draft-board row.
 
-**The draft board still orders by last season's actual production, and
-auto-draft still picks on it.** Projections are shown to inform a pick,
-not to make it — switching what the clock drafts for you changes the
-outcome of games, so that is a league decision rather than a default.
-Say the word and it is a one-line change in
-[`auto-draft.ts`](src/lib/auto-draft.ts).
+**The draft board and the auto-draft both order by ADP**, falling back to
+projection, then last season's production, for the players who have no
+ADP. One ordering, deliberately: if the board ranked players differently
+from what the clock takes on an expiry, the "best available" tab would be
+lying about what happens next.
+
+ADP is the better signal for a draft — it is forward-looking where last
+season's box scores are not, and the two disagree meaningfully.
+McCaffrey is RB1 on 2025 production but fifth by ADP.
 
 One trap if you touch this: Sleeper reports `gp: 18` for skill positions
 in a season projection but `gp: 1` for team defenses, so dividing points
@@ -311,11 +314,14 @@ manager's entire roster overnight. Either manager arms it from the draft
 room — 60, 90, 120, or 180 seconds a pick — when they are both actually at
 the board. Once armed it cannot be stopped, and every pick resets it.
 
-When a deadline passes, the manager on the clock is given the **highest
-points-per-game player still available** who is allowed by the week's
-House Rule and fits a roster slot they have not filled. "Still available"
-and "fits a slot" both matter: it will not hand you a third running back,
-and under Division Lockdown it stays inside the locked division.
+When a deadline passes, the manager on the clock is given the **lowest-ADP
+player still available** who is allowed by the week's House Rule and fits
+a roster slot they have not filled. "Still available" and "fits a slot"
+both matter: it will not hand you a third running back, and under
+Division Lockdown it stays inside the locked division.
+
+See [Projections and ADP](#projections-and-adp) for why ADP rather than
+last season's points per game.
 
 Enforcement is in Postgres, not the browser. `auto_pick()` refuses while
 time remains, so neither manager can force the other's pick early, and it
