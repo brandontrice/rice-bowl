@@ -463,9 +463,29 @@ The full deck (with which are auto-enforced vs. honor-system) lives in
 [`src/lib/scoring.ts`](src/lib/scoring.ts); draft-pool/roster logic is in
 [`src/lib/draft.ts`](src/lib/draft.ts).
 
+## Scoring
+
+**Full PPR** — a point per reception — and every House Rule is a modifier
+layered on that base. So the base is load-bearing: under PPR, Workhorse
+and Double Trouble are both worth noticeably more than they were at half,
+because they multiply a bigger number.
+
+Everything derived from production uses the same basis, or the app would
+rank players by one scoring system and score them with another: the
+`/players` rankings, the draft board's points per game, Sleeper's
+projections, and the ADP the board and auto-draft order by.
+
+Defenses use Sleeper's precomputed total rather than reimplementing
+points-allowed tiers. PPR and half-PPR are identical for a unit that
+catches no passes, so that is a consistency choice rather than an effect.
+
+A useful sanity check when changing this: receivers should move and
+quarterbacks should not. Switching to PPR moved Puka Nacua from 19.4 to
+23.4 points a game and Trey McBride from 14.9 to 18.6, while Josh Allen
+stayed at exactly 22.0.
 ## Player rankings and news
 
-`/players` ranks the pool by last completed season's points per game, with
+`/players` ranks the pool by last completed season's PPR points per game, with
 this season's beside it as games are played. Click through to
 `/players/[id]` for both seasons' totals, a week-by-week game log, and
 recent news. Player names on the draft board and on the matchup rosters

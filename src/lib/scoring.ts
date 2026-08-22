@@ -8,11 +8,19 @@ export type ScoreBreakdown = {
 };
 
 /**
- * Half-PPR base scoring, then the week's House Rule is layered on top.
- * DEF uses Sleeper's precomputed pts_half_ppr as a base (points-allowed
- * tiers aren't worth reimplementing) with only iron_wall/red_zone_royalty
- * applied on top; every other skill-position rule is computed from raw
- * counting stats so the modifiers can target individual stat categories.
+ * Full PPR base scoring — a point per reception — with the week's House
+ * Rule layered on top of that base. Every rule is a modifier on these
+ * numbers, so changing the base changes what the rules operate on: under
+ * PPR, Workhorse and Double Trouble are both worth noticeably more than
+ * they were at half.
+ *
+ * DEF uses Sleeper's precomputed pts_ppr as a base (points-allowed tiers
+ * aren't worth reimplementing) with only iron_wall/red_zone_royalty on
+ * top. PPR and half-PPR are identical for a defense, which catches no
+ * passes; it is used for consistency rather than effect.
+ *
+ * Skill positions are computed from raw counting stats so the modifiers
+ * can target individual categories.
  */
 export function computeWeeklyPoints(
   position: string | null,
@@ -20,7 +28,7 @@ export function computeWeeklyPoints(
   houseRuleKey: string,
 ): ScoreBreakdown {
   if (position === "DEF") {
-    let base = n(stats, "pts_half_ppr");
+    let base = n(stats, "pts_ppr");
     const components: Record<string, number> = { base };
     if (houseRuleKey === "iron_wall") {
       components.iron_wall_bonus = base;
@@ -40,7 +48,7 @@ export function computeWeeklyPoints(
   let rushTdPts = n(stats, "rush_td") * 6;
   const recYdPts = n(stats, "rec_yd") * 0.1;
   const recTdPts = n(stats, "rec_td") * 6;
-  const recPts = n(stats, "rec") * 0.5;
+  const recPts = n(stats, "rec") * 1;
   const twoPtPts =
     (n(stats, "pass_2pt") + n(stats, "rush_2pt") + n(stats, "rec_2pt")) * 2;
 

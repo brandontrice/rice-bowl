@@ -35,7 +35,7 @@ export async function isPlayerPoolStale(
  *
  * In the preseason, Sleeper's stats endpoint for the current year answers
  * 200 with thousands of entries that hold only projection *rank* fields —
- * no `gp`, no `pts_half_ppr`. So "did the request return anything" is not
+ * no `gp`, no `pts_ppr`. So "did the request return anything" is not
  * a usable test for whether a season can be ranked from; this is.
  */
 function usableStatLines(stats: Record<string, SleeperStatLine>): number {
@@ -68,7 +68,7 @@ async function hasWeeksFor(
  * Pulls Sleeper's player pool, attaches a production ranking, and upserts.
  *
  * The ranking is what makes the draft board sortable by "best available"
- * instead of alphabetically, and is derived from half-PPR points per game
+ * instead of alphabetically, and is derived from PPR points per game
  * over whichever season actually has production in it — see the comments
  * below, because "the current season" is the wrong answer for a chunk of
  * the year.
@@ -125,8 +125,8 @@ export async function syncPlayers(
 
     if (line && games > 0) {
       const total =
-        typeof line.pts_half_ppr === "number"
-          ? line.pts_half_ppr
+        typeof line.pts_ppr === "number"
+          ? line.pts_ppr
           : computeWeeklyPoints(p.position, line, "__base__").points;
       ppg = Math.round((total / games) * 10) / 10;
     }

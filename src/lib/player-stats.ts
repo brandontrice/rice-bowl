@@ -7,14 +7,14 @@ import {
 
 const BATCH = 500;
 
-/** Sleeper hands us half-PPR totals directly; no need to recompute them. */
+/** Sleeper hands us PPR totals directly; no need to recompute them. */
 function pointsOf(line: SleeperStatLine): number | null {
-  return typeof line.pts_half_ppr === "number" ? line.pts_half_ppr : null;
+  return typeof line.pts_ppr === "number" ? line.pts_ppr : null;
 }
 
 /** Skip the thousands of entries that are only projection-rank noise. */
 function hasProduction(line: SleeperStatLine): boolean {
-  return typeof line.gp === "number" || typeof line.pts_half_ppr === "number";
+  return typeof line.gp === "number" || typeof line.pts_ppr === "number";
 }
 
 async function upsertAll(

@@ -93,7 +93,7 @@ export async function fetchSleeperWeekStats(
 
 /**
  * Season-to-date totals for every player, keyed by Sleeper player_id.
- * Includes `gp` (games played) and `pts_half_ppr`, which is all we need
+ * Includes `gp` (games played) and `pts_ppr`, which is all we need
  * to rank the draft pool by production.
  */
 export async function fetchSleeperSeasonStats(
@@ -114,7 +114,7 @@ export async function fetchSleeperSeasonStats(
  * forward-looking numbers available without a paid provider.
  *
  * Omit `week` for whole-season projections; pass one for that week's.
- * Season projections also carry average draft position (`adp_half_ppr`
+ * Season projections also carry average draft position (`adp_ppr`
  * and friends), which is the closest thing to a consensus ranking.
  */
 export async function fetchSleeperProjections(

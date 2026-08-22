@@ -3,7 +3,12 @@ import { fetchSleeperProjections, type SleeperStatLine } from "@/lib/sleeper";
 
 const BATCH = 500;
 
-/** Sleeper parks "no meaningful ADP" at 999 rather than omitting it. */
+/**
+ * Sleeper parks "no meaningful ADP" at 999 rather than omitting it.
+ *
+ * PPR first, to match the league's scoring — and it happens to have
+ * better coverage than the half-PPR field anyway.
+ */
 const ADP_UNSET = 999;
 
 /** A full NFL regular season, used when Sleeper's own count is unusable. */
@@ -23,9 +28,16 @@ function seasonGames(line: SleeperStatLine): number {
 }
 
 function adpOf(line: SleeperStatLine): number | null {
-  const raw = line.adp_half_ppr ?? line.adp_ppr ?? line.adp_std;
-  if (typeof raw !== "number" || raw >= ADP_UNSET) return null;
-  return raw;
+  // Fall through on *unusable* values, not just missing ones. Sleeper
+  // writes 999 rather than null when a player has no ADP in a format, so
+  // `??` never falls through — it happily returns the 999 and the player
+  // ends up with no ADP at all. PPR is the league's format so it leads;
+  // the other two are only there to fill gaps, and between them they cover
+  // 490 of 548 projected players against 341 for PPR alone.
+  for (const raw of [line.adp_ppr, line.adp_half_ppr, line.adp_std]) {
+    if (typeof raw === "number" && raw > 0 && raw < ADP_UNSET) return raw;
+  }
+  return null;
 }
 
 /**
@@ -47,9 +59,9 @@ export async function syncProjections(
   const updatedAt = new Date().toISOString();
 
   const rows = Object.entries(projections)
-    .filter(([id, line]) => knownPlayerIds.has(id) && typeof line?.pts_half_ppr === "number")
+    .filter(([id, line]) => knownPlayerIds.has(id) && typeof line?.pts_ppr === "number")
     .map(([id, line]) => {
-      const points = line.pts_half_ppr as number;
+      const points = line.pts_ppr as number;
       return {
         player_id: id,
         season,
