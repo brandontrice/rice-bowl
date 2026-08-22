@@ -19,7 +19,10 @@ type SleeperPlayer = {
   espn_id?: number | string | null;
 };
 
-export type SleeperPoolPlayer = Omit<Player, "ppg" | "pos_rank" | "games_played">;
+export type SleeperPoolPlayer = Omit<
+  Player,
+  "ppg" | "pos_rank" | "games_played" | "proj_ppg" | "proj_points" | "adp"
+>;
 
 export async function fetchSleeperPlayerPool(): Promise<SleeperPoolPlayer[]> {
   const res = await fetch(`${SLEEPER_BASE}/players/nfl`, {
@@ -102,6 +105,29 @@ export async function fetchSleeperSeasonStats(
   });
   if (!res.ok) {
     throw new Error(`Sleeper season stats fetch failed: ${res.status}`);
+  }
+  return (await res.json()) as Record<string, SleeperStatLine>;
+}
+
+/**
+ * Sleeper's projections. Undocumented but stable, and the only
+ * forward-looking numbers available without a paid provider.
+ *
+ * Omit `week` for whole-season projections; pass one for that week's.
+ * Season projections also carry average draft position (`adp_half_ppr`
+ * and friends), which is the closest thing to a consensus ranking.
+ */
+export async function fetchSleeperProjections(
+  season: number,
+  week?: number,
+  seasonType: "regular" | "post" = "regular",
+): Promise<Record<string, SleeperStatLine>> {
+  const path = week
+    ? `${SLEEPER_BASE}/projections/nfl/${seasonType}/${season}/${week}`
+    : `${SLEEPER_BASE}/projections/nfl/${seasonType}/${season}`;
+  const res = await fetch(path, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Sleeper projections fetch failed: ${res.status}`);
   }
   return (await res.json()) as Record<string, SleeperStatLine>;
 }

@@ -296,7 +296,7 @@ export function DraftRoom({
                   return (
                     <div
                       key={p.id}
-                      className="grid grid-cols-[42px_auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 border-t border-seam-soft px-3 py-2 first:border-t-0"
+                      className="grid grid-cols-[42px_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-t border-seam-soft px-3 py-2 first:border-t-0"
                     >
                       {/* Positional rank, e.g. RB14. The board is ordered by
                           points per game across positions, so these numbers
@@ -328,8 +328,18 @@ export function DraftRoom({
                           {p.games_played ? ` · ${p.games_played}g` : ""}
                         </span>
                       </span>
-                      <span className="tabular-score w-11 text-right text-xs text-ink-dim">
-                        {p.ppg !== null ? p.ppg.toFixed(1) : "—"}
+                      {/* Last season's actual, then this season's projection.
+                          The board still orders by actual — projections are
+                          shown to inform the pick, not to make it. */}
+                      <span className="w-20 text-right">
+                        <span className="tabular-score block text-xs text-ink-dim">
+                          {p.ppg !== null ? p.ppg.toFixed(1) : "—"}
+                          <span className="ml-1 text-ink-faint">act</span>
+                        </span>
+                        <span className="tabular-score block text-xs text-flare">
+                          {p.proj_ppg !== null ? p.proj_ppg.toFixed(1) : "—"}
+                          <span className="ml-1 text-ink-faint">proj</span>
+                        </span>
                       </span>
                       <button
                         type="button"

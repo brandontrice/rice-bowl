@@ -8,6 +8,7 @@ import {
 import { computeWeeklyPoints } from "@/lib/scoring";
 import { syncSeasonStats, syncWeekStats } from "@/lib/player-stats";
 import { resolveMissingEspnIds } from "@/lib/espn-ids";
+import { syncProjections } from "@/lib/projections";
 import type { Player } from "@/types/database";
 
 const STALE_MS = 12 * 60 * 60 * 1000; // Sleeper's dump barely moves intra-day.
@@ -81,6 +82,9 @@ export async function syncPlayers(
   seasonRows: number;
   weekRows: number;
   espnIdsResolved: number;
+  projected: number;
+  projectionsMirrored: number;
+  withAdp: number;
 }> {
   const [players, state] = await Promise.all([
     fetchSleeperPlayerPool(),
@@ -108,7 +112,11 @@ export async function syncPlayers(
     }
   }
 
-  const ranked: Player[] = players.map((p) => {
+  // Deliberately without the projection columns: syncProjections owns
+  // those, and including them here as null would blank them on every sync.
+  type RankedRow = Omit<Player, "proj_ppg" | "proj_points" | "adp">;
+
+  const ranked: RankedRow[] = players.map((p) => {
     const line = stats[p.id];
     const games = line?.gp ?? 0;
     let ppg: number | null = null;
@@ -126,7 +134,7 @@ export async function syncPlayers(
 
   // Rank within position so the board can show "RB14" rather than a raw
   // overall number, which is meaningless across positions.
-  const byPosition = new Map<string, Player[]>();
+  const byPosition = new Map<string, RankedRow[]>();
   for (const p of ranked) {
     const key = p.position ?? "NA";
     const bucket = byPosition.get(key);
@@ -176,6 +184,16 @@ export async function syncPlayers(
     }
   }
 
+  // Forward-looking numbers for the current season. In a redraft league
+  // that runs weekly, a projection is often more use than last year.
+  const projections = Number.isFinite(seasonYear)
+    ? await syncProjections(supabase, seasonYear, knownIds).catch(() => ({
+        projected: 0,
+        mirrored: 0,
+        withAdp: 0,
+      }))
+    : { projected: 0, mirrored: 0, withAdp: 0 };
+
   // Sleeper only carries an espn_id for about a fifth of the pool, and the
   // gaps include names like Ja'Marr Chase — resolve the rest off ESPN's
   // team rosters so the player pages have news to show.
@@ -191,6 +209,9 @@ export async function syncPlayers(
     seasonRows,
     weekRows,
     espnIdsResolved: espn.resolved,
+    projected: projections.projected,
+    projectionsMirrored: projections.mirrored,
+    withAdp: projections.withAdp,
   };
 }
 

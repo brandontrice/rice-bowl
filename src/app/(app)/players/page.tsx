@@ -23,9 +23,10 @@ export default async function PlayersPage({
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-4xl uppercase text-ink">Players</h1>
-          <p className="mt-1 text-sm text-ink-dim">
-            Ranked by {seasons.previous} points per game. This season fills in beside it as games
-            are played.
+          <p className="mt-1 max-w-prose text-sm text-ink-dim">
+            Ranked by {seasons.previous} points per game, with {seasons.current} filling in beside
+            it as games are played. <span className="text-flare">Proj</span> is Sleeper&apos;s{" "}
+            {seasons.current} projection, with its average draft position underneath.
           </p>
         </div>
         <span className="font-data text-[11px] text-ink-faint">
@@ -36,11 +37,12 @@ export default async function PlayersPage({
       <PlayerFilters position={position} search={q ?? ""} />
 
       <section className="overflow-hidden rounded-2xl border border-seam bg-surface">
-        <header className="grid grid-cols-[46px_minmax(0,1fr)_66px_66px] items-center gap-3 border-b border-seam-soft px-4 py-2.5 sm:grid-cols-[46px_minmax(0,1fr)_88px_88px]">
+        <header className="grid grid-cols-[46px_minmax(0,1fr)_58px_58px_58px] items-center gap-2 border-b border-seam-soft px-4 py-2.5 sm:gap-3 sm:grid-cols-[46px_minmax(0,1fr)_76px_76px_76px]">
           <span className="label">Rank</span>
           <span className="label">Player</span>
           <span className="label text-right">{seasons.previous}</span>
           <span className="label text-right">{seasons.current}</span>
+          <span className="label text-right">Proj</span>
         </header>
 
         {players.length === 0 && (
@@ -53,7 +55,7 @@ export default async function PlayersPage({
           <Link
             key={p.id}
             href={`/players/${p.id}`}
-            className="grid grid-cols-[46px_minmax(0,1fr)_66px_66px] items-center gap-3 border-t border-seam-soft px-4 py-2.5 transition-colors first:border-t-0 hover:bg-surface-raised sm:grid-cols-[46px_minmax(0,1fr)_88px_88px]"
+            className="grid grid-cols-[46px_minmax(0,1fr)_58px_58px_58px] items-center gap-2 border-t border-seam-soft px-4 py-2.5 transition-colors first:border-t-0 hover:bg-surface-raised sm:gap-3 sm:grid-cols-[46px_minmax(0,1fr)_76px_76px_76px]"
           >
             <span
               className="tabular-score text-[11px]"
@@ -81,6 +83,7 @@ export default async function PlayersPage({
 
             <SeasonCell ppg={p.lastSeason?.ppg ?? p.ppg} games={p.lastSeason?.games_played ?? null} />
             <SeasonCell ppg={p.thisSeason?.ppg ?? null} games={p.thisSeason?.games_played ?? null} />
+            <SeasonCell ppg={p.proj_ppg} games={null} adp={p.adp} accent />
           </Link>
         ))}
       </section>
@@ -88,15 +91,30 @@ export default async function PlayersPage({
   );
 }
 
-function SeasonCell({ ppg, games }: { ppg: number | null; games: number | null }) {
+function SeasonCell({
+  ppg,
+  games,
+  adp,
+  accent,
+}: {
+  ppg: number | null;
+  games: number | null;
+  adp?: number | null;
+  accent?: boolean;
+}) {
   if (ppg === null) {
     return <span className="tabular-score text-right text-sm text-ink-faint">—</span>;
   }
   return (
     <span className="text-right">
-      <span className="tabular-score block text-sm text-ink">{ppg.toFixed(1)}</span>
+      <span className={`tabular-score block text-sm ${accent ? "text-flare" : "text-ink"}`}>
+        {ppg.toFixed(1)}
+      </span>
       {games ? (
-        <span className="font-data text-[10px] text-ink-faint">{games}g</span>
+        <span className="block font-data text-[10px] text-ink-faint">{games}g</span>
+      ) : null}
+      {adp != null ? (
+        <span className="block font-data text-[10px] text-ink-faint">ADP {adp.toFixed(0)}</span>
       ) : null}
     </span>
   );

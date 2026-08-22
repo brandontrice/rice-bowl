@@ -10,6 +10,13 @@ export type SeasonLine = {
   ppg: number | null;
 };
 
+export type ProjectionLine = {
+  season: number;
+  points: number | null;
+  ppg: number | null;
+  adp: number | null;
+};
+
 export type RankedPlayer = Player & {
   lastSeason: SeasonLine | null;
   thisSeason: SeasonLine | null;
@@ -104,7 +111,8 @@ export async function getPlayerDetail(playerId: string) {
     .maybeSingle();
   if (!player) return null;
 
-  const [{ data: lastSeason }, { data: thisSeason }, { data: weeks }] = await Promise.all([
+  const [{ data: lastSeason }, { data: thisSeason }, { data: weeks }, { data: projection }] =
+    await Promise.all([
     supabase
       .from("player_season_stats")
       .select("player_id, season, games_played, points, ppg")
@@ -123,6 +131,13 @@ export async function getPlayerDetail(playerId: string) {
       .eq("player_id", playerId)
       .eq("season", seasons.current)
       .order("week", { ascending: true }),
+    supabase
+      .from("player_projections")
+      .select("season, points, ppg, adp")
+      .eq("player_id", playerId)
+      .eq("season", seasons.current)
+      .eq("week", 0)
+      .maybeSingle(),
   ]);
 
   // Between February and September the current season has no games in it,
@@ -151,5 +166,6 @@ export async function getPlayerDetail(playerId: string) {
     thisSeason: (thisSeason ?? null) as SeasonLine | null,
     weeks: logWeeks,
     logSeason,
+    projection: (projection ?? null) as ProjectionLine | null,
   };
 }

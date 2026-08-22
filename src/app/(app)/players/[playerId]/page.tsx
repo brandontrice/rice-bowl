@@ -66,7 +66,7 @@ export default async function PlayerPage({
   const detail = await getPlayerDetail(playerId);
   if (!detail) notFound();
 
-  const { player, seasons, lastSeason, thisSeason, weeks, logSeason } = detail;
+  const { player, seasons, lastSeason, thisSeason, weeks, logSeason, projection } = detail;
   const news = await fetchPlayerNews(player.espn_id);
   const columns = STAT_COLUMNS[player.position ?? ""] ?? STAT_COLUMNS.RB;
   const color = positionColor(player.position);
@@ -100,16 +100,43 @@ export default async function PlayerPage({
             {player.status && player.status !== "Active" && (
               <span className="text-crimson">{player.status}</span>
             )}
+            {projection?.adp != null && (
+              <span
+                className="rounded-full border px-2 py-0.5"
+                style={{
+                  color,
+                  borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+                }}
+                title={`Average draft position across Sleeper leagues, ${seasons.current}`}
+              >
+                ADP {projection.adp.toFixed(1)}
+              </span>
+            )}
           </p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SeasonCard title={`${seasons.previous} season`} line={lastSeason} fallbackPpg={player.ppg} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SeasonCard title={`${seasons.previous} actual`} line={lastSeason} fallbackPpg={player.ppg} />
         <SeasonCard
-          title={`${seasons.current} season`}
+          title={`${seasons.current} to date`}
           line={thisSeason}
           emptyNote="Nothing logged yet this season."
+        />
+        <SeasonCard
+          title={`${seasons.current} projected`}
+          line={
+            projection
+              ? {
+                  season: projection.season,
+                  ppg: projection.ppg,
+                  points: projection.points,
+                  games_played: null,
+                }
+              : null
+          }
+          accent={color}
+          emptyNote="No projection published."
         />
       </div>
 
@@ -213,11 +240,13 @@ function SeasonCard({
   line,
   fallbackPpg,
   emptyNote,
+  accent,
 }: {
   title: string;
   line: SeasonLine | null;
   fallbackPpg?: number | null;
   emptyNote?: string;
+  accent?: string;
 }) {
   const ppg = line?.ppg ?? fallbackPpg ?? null;
   const games = line?.games_played ?? null;
@@ -230,7 +259,10 @@ function SeasonCard({
         <p className="mt-3 text-sm text-ink-dim">{emptyNote ?? "No production recorded."}</p>
       ) : (
         <>
-          <p className="tabular-score mt-2 text-4xl font-semibold leading-none text-ink">
+          <p
+            className="tabular-score mt-2 text-4xl font-semibold leading-none"
+            style={{ color: accent ?? "var(--ink)" }}
+          >
             {ppg.toFixed(1)}
             <span className="ml-1.5 font-data text-[11px] font-normal text-ink-faint">PPG</span>
           </p>

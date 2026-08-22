@@ -27,9 +27,10 @@ in the Supabase SQL Editor:
 | `0003_atomic_pick_and_indexes.sql` | The `make_pick()` locking function, week-scoped indexes, Realtime on `weekly_scores`, and the `ppg`/`pos_rank` columns the draft board ranks by |
 | `0004_pick_clock.sql` | `drafts.deadline_at` / `pick_seconds`, the `arm_draft_clock()` and `auto_pick()` functions, and `make_pick()` redefined to roll the clock forward |
 | `0005_player_stats_and_news.sql` | `players.espn_id`, the `player_season_stats` / `player_week_stats` tables, and the `player_season_to_date` view behind the rankings browser |
+| `0006_projections.sql` | `player_projections` plus `players.proj_ppg` / `proj_points` / `adp` for Sleeper's season projections and average draft position |
 
-Only `0003`, `0004`, and `0005` are safe to re-run: they guard every
-statement with `if not exists`, a `do` block, or `create or replace`.
+Only `0003` through `0006` are safe to re-run: they guard every statement
+with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
 table`, all of which error if the object is already there.
@@ -276,6 +277,31 @@ which is what keeps the two Josh Allens apart. That runs during the daily
 sync and only for players still missing an id. Coverage is around 94% of
 non-defense players; team defenses have no ESPN athlete record at all and
 show no news by design.
+
+### Projections and ADP
+
+Sleeper publishes season and per-week projections on an undocumented but
+stable endpoint, including average draft position. Both are pulled by the
+daily sync into `player_projections` and mirrored onto `players` so the
+lists can order by them without a join.
+
+Projections show up in three places: a third card on the player profile
+(alongside last season's actual and this season's to date), a `Proj`
+column on the rankings list with ADP underneath, and a second line on
+each draft-board row.
+
+**The draft board still orders by last season's actual production, and
+auto-draft still picks on it.** Projections are shown to inform a pick,
+not to make it — switching what the clock drafts for you changes the
+outcome of games, so that is a league decision rather than a default.
+Say the word and it is a one-line change in
+[`auto-draft.ts`](src/lib/auto-draft.ts).
+
+One trap if you touch this: Sleeper reports `gp: 18` for skill positions
+in a season projection but `gp: 1` for team defenses, so dividing points
+by it puts every defense at around 106 "points per game". `seasonGames()`
+in [`projections.ts`](src/lib/projections.ts) treats anything under ten as
+a unit marker rather than a game count.
 
 ## The pick clock
 

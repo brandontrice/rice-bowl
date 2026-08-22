@@ -56,6 +56,9 @@ export type Player = {
   ppg: number | null;
   pos_rank: number | null;
   games_played: number | null;
+  proj_ppg: number | null;
+  proj_points: number | null;
+  adp: number | null;
   espn_id: string | null;
 };
 
