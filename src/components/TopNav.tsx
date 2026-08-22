@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCurrentManager } from "@/lib/data";
 import { SignOutButton } from "@/components/SignOutButton";
 import { NavLink } from "@/components/ui/NavLink";
-import { BowlMark } from "@/components/ui/BowlMark";
+import { HouseMark } from "@/components/ui/HouseMark";
 
 export async function TopNav() {
   const manager = await getCurrentManager();
@@ -15,9 +15,9 @@ export async function TopNav() {
           className="group flex items-center gap-2.5 text-ink transition-opacity hover:opacity-80"
         >
           <span className="text-accent transition-transform duration-300 group-hover:-translate-y-0.5">
-            <BowlMark size={26} />
+            <HouseMark size={26} />
           </span>
-          <span className="font-display text-2xl uppercase tracking-wide">Rice Bowl</span>
+          <span className="font-display text-2xl uppercase tracking-wide">Rice-Lay House</span>
         </Link>
 
         <nav className="flex items-center gap-1">

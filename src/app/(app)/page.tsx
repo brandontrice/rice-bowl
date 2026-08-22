@@ -7,7 +7,8 @@ import { DeckGrid } from "@/components/DeckGrid";
 import { WaitingRoom } from "@/components/WaitingRoom";
 import { Shell } from "@/components/ui/Shell";
 import { HOUSE_RULES } from "@/lib/house-rules";
-import { BowlMark } from "@/components/ui/BowlMark";
+import { HouseMark } from "@/components/ui/HouseMark";
+import { Preseason } from "@/components/Preseason";
 
 export default async function Home() {
   const manager = await getCurrentManager();
@@ -35,11 +36,11 @@ export default async function Home() {
               hasn't started. */}
           <header className="flex flex-col items-center gap-5 py-10 text-center sm:py-14">
             <span className="text-accent">
-              <BowlMark size={72} animated />
+              <HouseMark size={72} animated />
             </span>
 
             <h1 className="font-display text-6xl uppercase leading-[0.85] text-ink sm:text-8xl">
-              The Rice Bowl
+              Rice-Lay House
             </h1>
 
             <p className="max-w-md text-base text-ink-dim">
@@ -86,7 +87,20 @@ export default async function Home() {
   const supabase = await createClient();
   const result = await ensureCurrentWeek(supabase);
 
-  if (!result.week) {
+  if (result.status === "not-started") {
+    const { data: opener } = await supabase
+      .from("nfl_games")
+      .select("kickoff_at")
+      .eq("season", result.season)
+      .eq("week", 1)
+      .order("kickoff_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return <Preseason season={result.season} seasonType={result.seasonType} kickoffAt={opener?.kickoff_at ?? null} />;
+  }
+
+  if (result.status === "error") {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
         <h1 className="font-display text-4xl uppercase text-ink">Hang tight</h1>

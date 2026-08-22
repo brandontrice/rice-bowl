@@ -12,8 +12,14 @@ export async function POST() {
   }
 
   const result = await ensureCurrentWeek(supabase);
-  if (result.error) {
+  if (result.status === "error") {
     return NextResponse.json({ error: result.error }, { status: 409 });
+  }
+  if (result.status === "not-started") {
+    return NextResponse.json(
+      { error: `the ${result.seasonType} season has no Rice-Lay House weeks` },
+      { status: 409 },
+    );
   }
   return NextResponse.json({ week: result.week });
 }

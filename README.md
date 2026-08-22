@@ -1,4 +1,4 @@
-# The Rice Bowl
+# Rice-Lay House
 
 A two-manager, permanent-rivalry fantasy app. Rosters redraft from the live
 NFL player pool every week via a snake draft; a House Rule card (dealt from
@@ -240,7 +240,8 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
 ## How a week works
 
 1. **Home (`/`)** resolves to the current NFL week and shows its House
-   Rule card face down until you turn it over.
+   Rule card face down until you turn it over. Outside the regular season
+   it shows a countdown to Week 1 instead — see [Preseason](#preseason).
 2. **Draft room (`/week/[id]/draft`)** — snake draft, 8 slots
    (QB/RB/RB/WR/WR/TE/FLEX/DST), synced live via Supabase Realtime. The
    pool is ordered by average draft position and filterable by position or
@@ -264,6 +265,26 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
 6. **Deck (`/deck`)** — all 20 cards, with the ones already dealt this
    season marked.
 
+## Preseason
+
+The league plays weeks 1 through 18 and nothing else. No week is dealt
+during the preseason or the playoffs.
+
+This mattered more than it sounds. Sleeper's `state.week` counts preseason
+weeks, so in August it reads 2 — and `ensureCurrentWeek` acted on it
+directly. The first time both managers were signed in during August it
+would have created a competitive "Week 2", skipping Week 1 entirely and
+settling the rivalry on exhibition football where starters sit after a
+series.
+
+`ensureCurrentWeek` now returns `not-started` unless
+`state.season_type === "regular"`, and the home page shows a countdown to
+the first kickoff rather than a matchup.
+
+Everything that reads the NFL rather than the rivalry keeps working
+year-round: the schedule, the player rankings with last season's
+production and this year's projections, and the deck. Only the drafting
+waits.
 ## The week's rhythm
 
 | When | What happens |

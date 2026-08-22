@@ -7,23 +7,45 @@ import { fetchWeekKickoff } from "@/lib/schedule";
 import type { Week, Draft } from "@/types/database";
 
 export type EnsureWeekResult =
-  | { week: Week & { drafts: Draft[] }; error?: undefined }
-  | { week?: undefined; error: string };
+  | { status: "ready"; week: Week & { drafts: Draft[] } }
+  | { status: "not-started"; season: number; seasonType: string }
+  | { status: "error"; error: string };
 
-/** Gets this NFL week's Rice Bowl matchup, dealing the House Rule and building the draft if it doesn't exist yet. */
+/**
+ * Gets this NFL week's matchup, dealing the House Rule and building the
+ * draft if it doesn't exist yet.
+ *
+ * Only ever during the regular season. Sleeper's `state.week` counts
+ * preseason weeks too, so in August it reads 2 — which would have created
+ * a competitive "Week 2", skipping Week 1 entirely and playing the rivalry
+ * out against exhibition football where starters sit after a drive.
+ * Preseason and the playoffs are for watching; the league plays weeks 1
+ * through 18.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<EnsureWeekResult> {
   const { data: managers, error: managersError } = await supabase
     .from("managers")
     .select("*")
     .order("created_at", { ascending: true });
-  if (managersError) return { error: managersError.message };
+  if (managersError) return { status: "error", error: managersError.message };
   if (!managers || managers.length < 2) {
-    return { error: "Both managers need to sign up before the league can start." };
+    return {
+      status: "error",
+      error: "Both managers need to sign up before the league can start.",
+    };
   }
 
   const state = await fetchSleeperState();
   const seasonYear = Number(state.season);
+
+  // Nothing is dealt outside the regular season. state.week counts
+  // preseason weeks, so acting on it in August would have created a
+  // competitive "Week 2" against exhibition football.
+  if (state.season_type !== "regular") {
+    return { status: "not-started", season: seasonYear, seasonType: state.season_type };
+  }
+
   const weekNumber = Math.max(1, state.week);
 
   let { data: season } = await supabase
@@ -38,7 +60,7 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
       .insert({ year: seasonYear, name: `${seasonYear} Season` })
       .select("*")
       .single();
-    if (error) return { error: error.message };
+    if (error) return { status: "error", error: error.message };
     season = created;
   }
 
@@ -50,7 +72,7 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
     .maybeSingle();
 
   if (existingWeek) {
-    return { week: existingWeek };
+    return { status: "ready", week: existingWeek };
   }
 
   const seed = seedFromWeek(seasonYear, weekNumber);
@@ -86,7 +108,7 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
     })
     .select("*")
     .single();
-  if (weekError) return { error: weekError.message };
+  if (weekError) return { status: "error", error: weekError.message };
 
   const draftOrder = buildSnakeOrder(orderedIds);
   const { data: draft, error: draftError } = await supabase
@@ -94,7 +116,7 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
     .insert({ week_id: week.id, status: "pending", draft_order: draftOrder, current_pick: 0 })
     .select("*")
     .single();
-  if (draftError) return { error: draftError.message };
+  if (draftError) return { status: "error", error: draftError.message };
 
-  return { week: { ...week, drafts: [draft] } };
+  return { status: "ready", week: { ...week, drafts: [draft] } };
 }

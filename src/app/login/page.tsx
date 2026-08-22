@@ -53,9 +53,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <header className="mb-9 text-center">
           <h1 className="font-display text-6xl uppercase leading-[0.85] text-ink">
-            The Rice
+            Rice-Lay
             <br />
-            Bowl
+            House
           </h1>
           <p className="mt-3 text-sm text-ink-dim">
             Same two managers. Never the same team twice.

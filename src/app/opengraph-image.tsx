@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "The Rice Bowl — a permanent-rivalry fantasy matchup, redrafted every week.";
+export const alt = "Rice-Lay House — a permanent-rivalry fantasy matchup, redrafted every week.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -47,7 +47,7 @@ export default function OpengraphImage() {
               color: "#f2f7f1",
             }}
           >
-            The Rice Bowl
+            Rice-Lay House
           </div>
           <div style={{ display: "flex", marginTop: 24, fontSize: 32, color: "#a7c0ae" }}>
             Redrafted every week. One House Rule, dealt from the deck.

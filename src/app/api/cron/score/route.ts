@@ -22,9 +22,12 @@ export async function GET(request: Request) {
   // rolls on Tuesday; doing this here means the card is face down and
   // waiting whenever the managers next open the app, rather than being
   // created by whoever happens to visit first.
-  const dealt = await ensureCurrentWeek(supabase).catch((err) => ({
-    error: err instanceof Error ? err.message : "deal failed",
-  }));
+  const dealt = await ensureCurrentWeek(supabase).catch(
+    (err): { status: "error"; error: string } => ({
+      status: "error",
+      error: err instanceof Error ? err.message : "deal failed",
+    }),
+  );
 
   const { data: weeks, error } = await supabase
     .from("weeks")
@@ -48,7 +51,12 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    dealt: "week" in dealt && dealt.week ? dealt.week.week_number : (dealt.error ?? null),
+    dealt:
+      dealt.status === "ready"
+        ? dealt.week.week_number
+        : dealt.status === "not-started"
+          ? `not started ()`
+          : dealt.error,
     scored: results,
   });
 }

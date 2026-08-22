@@ -25,13 +25,13 @@ const data = Chivo_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "The Rice Bowl",
-    template: "%s · The Rice Bowl",
+    default: "Rice-Lay House",
+    template: "%s · Rice-Lay House",
   },
   description: "A permanent-rivalry fantasy matchup, redrafted every week.",
-  applicationName: "The Rice Bowl",
+  applicationName: "Rice-Lay House",
   openGraph: {
-    title: "The Rice Bowl",
+    title: "Rice-Lay House",
     description: "A permanent-rivalry fantasy matchup, redrafted every week.",
     type: "website",
   },
