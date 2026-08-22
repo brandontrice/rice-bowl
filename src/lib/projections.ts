@@ -22,12 +22,12 @@ const SEASON_GAMES = 18;
  * number roughly eighteen times too large — the Rams came out at 106 ppg.
  * Anything that small is a unit marker rather than a game count.
  */
-function seasonGames(line: SleeperStatLine): number {
+export function seasonGames(line: SleeperStatLine): number {
   const gp = typeof line.gp === "number" ? line.gp : 0;
   return gp >= 10 ? gp : SEASON_GAMES;
 }
 
-function adpOf(line: SleeperStatLine): number | null {
+export function adpOf(line: SleeperStatLine): number | null {
   // Fall through on *unusable* values, not just missing ones. Sleeper
   // writes 999 rather than null when a player has no ADP in a format, so
   // `??` never falls through — it happily returns the 999 and the player

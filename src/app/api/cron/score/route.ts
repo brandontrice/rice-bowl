@@ -10,6 +10,8 @@ import { ensureCurrentWeek } from "@/lib/ensure-week";
  * scores", which also meant a week was finalised whenever someone happened
  * to visit rather than when it actually ended.
  */
+export const maxDuration = 120;
+
 export async function GET(request: Request) {
   const denied = verifyCronRequest(request);
   if (denied) {
@@ -49,14 +51,19 @@ export async function GET(request: Request) {
     }
   }
 
+  // Report failure as failure. Returning 200 with an error buried in the
+  // body meant a broken week showed up green in Vercel's cron history, and
+  // the first anyone would know is an app that quietly stopped scoring.
+  const failed = results.filter((r) => "error" in r);
+
   return NextResponse.json({
-    ok: true,
+    ok: failed.length === 0,
     dealt:
       dealt.status === "ready"
         ? dealt.week.week_number
         : dealt.status === "not-started"
-          ? `not started ()`
+          ? `not started (${dealt.seasonType})`
           : dealt.error,
     scored: results,
-  });
+  }, { status: failed.length > 0 ? 500 : 200 });
 }

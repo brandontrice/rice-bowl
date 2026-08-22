@@ -103,7 +103,17 @@ export function DraftRoom({
   const opponentPicks = opponent ? picks.filter((p) => p.manager_id === opponent.id) : [];
 
   const slotDefs = rosterSlotDefs(week);
-  const pickedIds = new Set(picks.map((p) => p.player_id));
+
+  // Under Blind Draft the pool must keep showing players the opponent has
+  // taken. Removing them hid the roster but leaked the same information
+  // through the back door — watch a name vanish and you know exactly who
+  // they picked, which defeats the rule entirely. Trying to take one is
+  // refused by make_pick's unique constraint, which only tells you on the
+  // attempt rather than continuously.
+  const visiblePicks = isBlind
+    ? picks.filter((p) => p.manager_id === currentManagerId)
+    : picks;
+  const pickedIds = new Set(visiblePicks.map((p) => p.player_id));
   const lockedSet = useMemo(() => new Set(lockedTeams), [lockedTeams]);
   const term = search.trim().toLowerCase();
 
@@ -267,7 +277,9 @@ export function DraftRoom({
           hidden={false}
         />
 
-        <div className="order-last flex flex-col gap-3 lg:order-none">
+        {/* Pool first on a phone: drafting is the job, and scrolling past
+            two rosters to reach the board is the wrong default. */}
+        <div className="order-first flex flex-col gap-3 lg:order-none">
           {draft.status === "active" ? (
             <>
               <div className="flex flex-wrap items-center gap-1.5">

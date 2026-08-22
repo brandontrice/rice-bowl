@@ -228,6 +228,25 @@ Deployment Protection, which answers unauthenticated requests with a 302
 to `vercel.com/sso-api` before any application code runs, so the workflow
 cannot be pointed at a preview URL without a protection-bypass token.
 
+## Tests
+
+```bash
+npm test          # once
+npm run test:watch
+```
+
+[`src/lib/regressions.test.ts`](src/lib/regressions.test.ts) covers the
+pure logic: PPR scoring with House Rules layered on it, slot assignment,
+snake order shrinking as keeps accumulate, pool restrictions, and the two
+Sleeper fields that lie.
+
+Every case is either a rule the game would be broken without, or a bug
+that actually shipped. The `999`-means-no-ADP trap and the `gp = 1` marker
+on team defenses both reached production and were caught by reading
+output rather than by anything automatic; both are one-line assertions
+here. Vitest is the only dev dependency the project has picked up — the
+application's own dependency list is still unchanged.
+
 ## Running locally
 
 ```bash

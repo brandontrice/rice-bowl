@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { createServiceClient, verifyCronRequest } from "@/lib/supabase/service";
 import { syncPlayers } from "@/lib/sync-players";
 
-/** Vercel Cron: refresh the Sleeper player pool and its production ranking. */
+/**
+ * Vercel Cron: refresh the Sleeper player pool and its production ranking.
+ *
+ * Declared long because it is: the pool, last season's totals, the ESPN id
+ * backfill, projections and the full schedule land in one pass, around 35
+ * seconds today and growing once in-season weeks start backfilling.
+ */
+export const maxDuration = 120;
+
 export async function GET(request: Request) {
   const denied = verifyCronRequest(request);
   if (denied) {
