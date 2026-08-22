@@ -52,7 +52,12 @@ export function LeagueRollCall({
             className="flex flex-col gap-3 rounded-xl border border-dashed border-seam bg-ground px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-ink-faint" />
+              {/* Pulsing rather than a static ring — the page is genuinely
+                  listening on Realtime, and the dot should say so. */}
+              <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
+                <span className="animate-waiting absolute inline-flex h-full w-full rounded-full bg-accent/60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+              </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{entry.display_name}</p>
                 <p className="truncate font-data text-[11px] text-ink-faint">{entry.email}</p>

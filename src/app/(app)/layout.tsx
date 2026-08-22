@@ -6,8 +6,9 @@ import { TopNav } from "@/components/TopNav";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
+      <div className="field-backdrop" aria-hidden="true" />
       <TopNav />
-      <main className="w-full flex-1 px-4 py-6 sm:px-6">{children}</main>
+      <main className="relative z-10 w-full flex-1 px-4 py-6 sm:px-6">{children}</main>
     </div>
   );
 }

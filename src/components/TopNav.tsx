@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentManager } from "@/lib/data";
 import { SignOutButton } from "@/components/SignOutButton";
 import { NavLink } from "@/components/ui/NavLink";
+import { BowlMark } from "@/components/ui/BowlMark";
 
 export async function TopNav() {
   const manager = await getCurrentManager();
@@ -11,9 +12,12 @@ export async function TopNav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"
-          className="font-display text-2xl uppercase tracking-wide text-ink transition-opacity hover:opacity-80"
+          className="group flex items-center gap-2.5 text-ink transition-opacity hover:opacity-80"
         >
-          Rice Bowl
+          <span className="text-accent transition-transform duration-300 group-hover:-translate-y-0.5">
+            <BowlMark size={26} />
+          </span>
+          <span className="font-display text-2xl uppercase tracking-wide">Rice Bowl</span>
         </Link>
 
         <nav className="flex items-center gap-1">
