@@ -31,9 +31,8 @@ in the Supabase SQL Editor:
 Only `0003`, `0004`, and `0005` are safe to re-run: they guard every
 statement with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
-statements, a
-`create trigger`, and several `alter publication ... add table`, all of
-which error if the object is already there.
+statements, a `create trigger`, and several `alter publication ... add
+table`, all of which error if the object is already there.
 
 This matters if you adopt the CLI after applying anything by hand. The
 CLI tracks what it has run in `supabase_migrations.schema_migrations`,
