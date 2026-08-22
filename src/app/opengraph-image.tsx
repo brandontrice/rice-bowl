@@ -18,7 +18,7 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#14100c",
+          background: "#0a1f14",
           padding: 72,
           fontFamily: "sans-serif",
         }}
@@ -29,7 +29,7 @@ export default function OpengraphImage() {
             fontSize: 22,
             letterSpacing: 6,
             textTransform: "uppercase",
-            color: "#7a6c59",
+            color: "#ffc72c",
           }}
         >
           Two managers · One rivalry
@@ -44,19 +44,19 @@ export default function OpengraphImage() {
               lineHeight: 0.9,
               letterSpacing: -2,
               textTransform: "uppercase",
-              color: "#f7f2e7",
+              color: "#f2f7f1",
             }}
           >
             The Rice Bowl
           </div>
-          <div style={{ display: "flex", marginTop: 24, fontSize: 32, color: "#a99a85" }}>
+          <div style={{ display: "flex", marginTop: 24, fontSize: 32, color: "#a7c0ae" }}>
             Redrafted every week. One House Rule, dealt from the deck.
           </div>
         </div>
 
         <div style={{ display: "flex", height: 12, width: "100%" }}>
-          <div style={{ display: "flex", width: "58%", background: "#f2603a" }} />
-          <div style={{ display: "flex", width: "42%", background: "#47a8d8" }} />
+          <div style={{ display: "flex", width: "58%", background: "#e8559b" }} />
+          <div style={{ display: "flex", width: "42%", background: "#38bdf8" }} />
         </div>
       </div>
     ),

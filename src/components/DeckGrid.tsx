@@ -1,5 +1,6 @@
 import { HOUSE_RULES } from "@/lib/house-rules";
 import { RULE_STYLE } from "@/lib/rule-style";
+import { RuleEmblem } from "@/components/RuleEmblem";
 
 /**
  * The deck, as a deck. This was a flat accordion of twenty one-liners —
@@ -36,15 +37,33 @@ export function DeckGrid({
                   : undefined,
               }}
             >
+              {/* The emblem sits large and low-contrast behind the card, so
+                  the deck reads as a set of faces at a glance without the
+                  glyph competing with the rule's name. */}
               <span
-                className="font-data text-[9px] uppercase tracking-[0.12em]"
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-3 -right-2 opacity-[0.13]"
                 style={{ color: style.color }}
               >
-                {style.label}
+                <RuleEmblem ruleKey={rule.key} size={82} />
               </span>
-              <h3 className="font-display text-xl uppercase leading-none text-ink">{rule.name}</h3>
-              <p className="text-xs text-ink-dim">{rule.tagline}</p>
-              <p className="mt-auto pr-10 text-[11px] leading-snug text-ink-faint">
+
+              {/* The emblem gets real size rather than sitting inline with
+                  the label — at 13px the busier glyphs are mud. */}
+              <span
+                className="relative flex items-start justify-between gap-2"
+                style={{ color: style.color }}
+              >
+                <RuleEmblem ruleKey={rule.key} size={26} />
+                <span className="font-data text-[9px] uppercase tracking-[0.12em]">
+                  {style.label}
+                </span>
+              </span>
+              <h3 className="relative font-display text-xl uppercase leading-none text-ink">
+                {rule.name}
+              </h3>
+              <p className="relative text-xs text-ink-dim">{rule.tagline}</p>
+              <p className="relative mt-auto pr-12 text-[11px] leading-snug text-ink-faint">
                 {rule.description}
               </p>
               {isDealt && (

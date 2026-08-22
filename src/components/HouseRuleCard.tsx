@@ -1,5 +1,6 @@
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
 import { RULE_STYLE } from "@/lib/rule-style";
+import { RuleEmblem } from "@/components/RuleEmblem";
 import type { Manager, Week } from "@/types/database";
 
 /**
@@ -37,7 +38,13 @@ export function HouseRuleCard({
     <article
       className="relative overflow-hidden rounded-2xl border border-seam bg-surface p-5 sm:p-6"
       style={{
-        backgroundImage: `radial-gradient(120% 140% at 88% -20%, color-mix(in srgb, ${style.color} 14%, transparent), transparent 62%)`,
+        // Both layers live here rather than splitting the yard lines into a
+        // class: an inline backgroundImage would replace the class's,
+        // silently dropping the markings.
+        backgroundImage: [
+          `radial-gradient(120% 140% at 88% -20%, color-mix(in srgb, ${style.color} 16%, transparent), transparent 62%)`,
+          "repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 0 1px, transparent 1px 56px)",
+        ].join(", "),
       }}
     >
       <span
@@ -45,18 +52,29 @@ export function HouseRuleCard({
         className="pointer-events-none absolute inset-1.5 rounded-xl border border-seam-soft"
       />
 
+      {/* The week's emblem, oversized and faint — the card should be
+          recognisable across a room before the name is readable. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-6 -right-4 opacity-[0.12]"
+        style={{ color: style.color }}
+      >
+        <RuleEmblem ruleKey={rule.key} size={168} />
+      </span>
+
       <div className="relative flex items-center justify-between gap-3">
         <span className="label">
           {week.week_number ? `Week ${week.week_number} · ` : ""}House Rule
         </span>
         <span
-          className="rounded-full border px-2.5 py-1 font-data text-[10px] uppercase tracking-[0.1em]"
+          className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-data text-[10px] uppercase tracking-[0.1em]"
           style={{
             color: style.color,
             borderColor: `color-mix(in srgb, ${style.color} 45%, transparent)`,
             backgroundColor: `color-mix(in srgb, ${style.color} 10%, transparent)`,
           }}
         >
+          <RuleEmblem ruleKey={rule.key} size={14} />
           {style.label}
         </span>
       </div>

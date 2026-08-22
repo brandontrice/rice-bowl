@@ -10,11 +10,11 @@ export const RULE_STYLE: Record<
   HouseRuleEnforcement,
   { label: string; color: string }
 > = {
-  scoring: { label: "Scoring", color: "var(--flare)" },
-  "draft-pool": { label: "Pool", color: "var(--ember)" },
+  scoring: { label: "Scoring", color: "var(--goalpost)" },
+  "draft-pool": { label: "Pool", color: "var(--pos-wr)" },
   "roster-constraint": { label: "Roster", color: "var(--jade)" },
-  "draft-order": { label: "Draft order", color: "var(--pos-wr)" },
-  visibility: { label: "Visibility", color: "var(--iris)" },
+  "draft-order": { label: "Draft order", color: "var(--mgr-a)" },
+  visibility: { label: "Visibility", color: "var(--orchid)" },
   honor: { label: "Honor rule", color: "var(--ink-dim)" },
 };
 

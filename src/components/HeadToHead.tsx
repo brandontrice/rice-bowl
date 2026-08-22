@@ -35,7 +35,7 @@ export function HeadToHead({
   const leader = scoreA === scoreB ? null : scoreA > scoreB ? a : b;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-seam bg-surface">
+    <section className="field-lines overflow-hidden rounded-2xl border border-seam bg-surface">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 pb-4 pt-5">
         <ManagerSide manager={a} score={scoreA} unit={unit} digits={digits} dimmed={leader !== null && leader.id !== a.id}
         />

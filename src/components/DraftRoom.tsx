@@ -446,7 +446,7 @@ function RosterColumn({
             {hidden && row.pick ? (
               // Blind Draft should look like a face-down card, not the word
               // "hidden" — the mechanic is the point of the rule.
-              <span className="flex h-5 items-center rounded border border-dashed border-iris/50 bg-iris/10 px-2 font-data text-[9px] uppercase tracking-widest text-iris">
+              <span className="flex h-5 items-center rounded border border-dashed border-orchid/50 bg-orchid/10 px-2 font-data text-[9px] uppercase tracking-widest text-orchid">
                 Face down
               </span>
             ) : row.pick?.players ? (

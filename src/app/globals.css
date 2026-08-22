@@ -1,40 +1,41 @@
 @import "tailwindcss";
 
 /* ============================================================
-   The Rice Bowl — lacquer & ember
-   A warm, committed-dark surface. Manager accents are structural
-   (seams, score bars, roster rails) and never semantic; jade /
-   flare / crimson carry meaning on their own.
+   The Rice Bowl — turf, chalk, goalposts
+   A field at night: deep turf ground, chalk-white type, and
+   goalpost yellow as the one action colour. Manager accents are
+   structural (seams, score bars, roster rails) and never semantic;
+   mint / pale-yellow / red carry meaning on their own.
    ============================================================ */
 :root {
-  /* ground ramp */
-  --ground: #14100c;
-  --surface: #1c1710;
-  --surface-raised: #262019;
-  --seam: #382e24;
-  --seam-soft: #2a221a;
+  /* turf ramp */
+  --ground: #0a1f14;
+  --surface: #102a1b;
+  --surface-raised: #173521;
+  --seam: #244a31;
+  --seam-soft: #183823;
 
-  /* ink ramp */
-  --ink: #f7f2e7;
-  --ink-dim: #a99a85;
-  --ink-faint: #7a6c59;
+  /* chalk ramp */
+  --ink: #f2f7f1;
+  --ink-dim: #a7c0ae;
+  --ink-faint: #7d9c8a;
 
-  /* brand */
-  --ember: #f2603a;
-  --ember-deep: #c4381a;
+  /* the uprights */
+  --goalpost: #ffc72c;
+  --goalpost-deep: #d9a20f;
 
   /* semantic — deliberately separate from the manager accents */
-  --jade: #63c98a;
-  --flare: #e8b54a;
-  --crimson: #e05753;
+  --jade: #5fd98a;
+  --flare: #f5de7a;
+  --crimson: #f2555f;
 
   /* the two rivals. Overridden per-manager from the DB at render time. */
-  --mgr-a: #f2603a;
-  --mgr-b: #47a8d8;
+  --mgr-a: #e8559b;
+  --mgr-b: #38bdf8;
 
   /* `--accent` is the action colour. The matchup page re-points it at
      whoever is currently leading, so CTAs pick up the rivalry. */
-  --accent: var(--ember);
+  --accent: var(--goalpost);
 }
 
 @theme inline {
@@ -48,8 +49,8 @@
   --color-ink-dim: var(--ink-dim);
   --color-ink-faint: var(--ink-faint);
 
-  --color-ember: var(--ember);
-  --color-ember-deep: var(--ember-deep);
+  --color-goalpost: var(--goalpost);
+  --color-goalpost-deep: var(--goalpost-deep);
   --color-jade: var(--jade);
   --color-flare: var(--flare);
   --color-crimson: var(--crimson);
@@ -95,6 +96,17 @@ body {
   color: var(--ink-faint);
 }
 
+/* Yard markings. Faint enough to read as texture rather than stripes —
+   used on the week's card and the head-to-head, not everywhere, or the
+   whole app starts to buzz. */
+.field-lines {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ink) 5%, transparent) 0 1px,
+    transparent 1px 56px
+  );
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -116,17 +128,17 @@ body {
    everywhere that concept appears. After a few weeks you should be able
    to tell "this is a scoring week" before reading a word. */
 :root {
-  --iris: #a292e6;
+  --orchid: #c79be8;
 
-  --pos-qb: #e8b54a;
-  --pos-rb: #63c98a;
-  --pos-wr: #47a8d8;
+  --pos-qb: #ffc72c;
+  --pos-rb: #5fd98a;
+  --pos-wr: #38bdf8;
   --pos-te: #c79be8;
-  --pos-dst: #a99a85;
+  --pos-dst: #a7c0ae;
 }
 
 @theme inline {
-  --color-iris: var(--iris);
+  --color-orchid: var(--orchid);
   --color-pos-qb: var(--pos-qb);
   --color-pos-rb: var(--pos-rb);
   --color-pos-wr: var(--pos-wr);

@@ -13,6 +13,34 @@ tally.
 - Sleeper's public API for the player pool and weekly stats (no key needed)
 - Tailwind CSS v4
 
+## The look
+
+A field at night: deep turf ground, chalk-white type, goalpost yellow as
+the single action colour. Faint yard markings sit behind the week's card
+and the head-to-head, and nowhere else — put them everywhere and the
+whole app buzzes.
+
+Colour has jobs, and they don't overlap. Goalpost yellow means *do
+something*. Mint, pale yellow, and red mean good, attention, and bad. The
+two manager accents are structural only — the seam down the score bar,
+the rail on a roster — and never carry meaning, because they come from
+the database and either manager can change theirs.
+
+Manager colours need to survive on turf. Magenta and sky both do, and
+neither collides with the yellow or the mint. Everything in the palette
+clears WCAG AA against the card surface; the small uppercase labels are
+the tightest at 5.1, and they were the reason `--ink-faint` is lighter
+than it first looks like it wants to be.
+
+Each House Rule has its own emblem, drawn as inline SVG in
+[`RuleEmblem.tsx`](src/components/RuleEmblem.tsx) — a padlock for Division
+Lockdown, a crosshair for Sniper, a closed eye for Blind Draft. They are
+hand-drawn rather than pulled from an icon set because half of these ideas
+have no stock equivalent, and a set assembled from near-misses reads worse
+than a small consistent one drawn on purpose. Each appears twice on a
+card: once at readable size in the corner, and once oversized and faint
+behind the text, so the deck is recognisable as a spread of faces before
+any of it is legible.
 ## One-time setup
 
 ### 1. Run the database migrations
