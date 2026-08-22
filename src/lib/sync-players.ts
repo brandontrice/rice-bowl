@@ -6,6 +6,8 @@ import {
   type SleeperStatLine,
 } from "@/lib/sleeper";
 import { computeWeeklyPoints } from "@/lib/scoring";
+import { syncSeasonStats, syncWeekStats } from "@/lib/player-stats";
+import { resolveMissingEspnIds } from "@/lib/espn-ids";
 import type { Player } from "@/types/database";
 
 const STALE_MS = 12 * 60 * 60 * 1000; // Sleeper's dump barely moves intra-day.
@@ -44,6 +46,22 @@ function usableStatLines(stats: Record<string, SleeperStatLine>): number {
 
 const MIN_USABLE_LINES = 50;
 
+/** Weeks in a modern NFL regular season. */
+const REGULAR_SEASON_WEEKS = 18;
+
+/** Have we already stored a game log for this season? */
+async function hasWeeksFor(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  season: number,
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("player_week_stats")
+    .select("player_id", { count: "exact", head: true })
+    .eq("season", season);
+  return (count ?? 0) > 0;
+}
+
 /**
  * Pulls Sleeper's player pool, attaches a production ranking, and upserts.
  *
@@ -56,7 +74,14 @@ const MIN_USABLE_LINES = 50;
 export async function syncPlayers(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>,
-): Promise<{ synced: number; ranked: number; rankedFrom: number | null }> {
+): Promise<{
+  synced: number;
+  ranked: number;
+  rankedFrom: number | null;
+  seasonRows: number;
+  weekRows: number;
+  espnIdsResolved: number;
+}> {
   const [players, state] = await Promise.all([
     fetchSleeperPlayerPool(),
     fetchSleeperState(),
@@ -124,10 +149,48 @@ export async function syncPlayers(
     if (error) throw new Error(error.message);
   }
 
+  // Stat history for the rankings browser. The previous season is fixed
+  // and fetched wholesale; the current one is filled week by week so the
+  // same rows can be topped up live during games.
+  const knownIds = new Set(ranked.map((p) => p.id));
+  let seasonRows = 0;
+  let weekRows = 0;
+
+  if (Number.isFinite(seasonYear)) {
+    seasonRows = await syncSeasonStats(supabase, seasonYear - 1, knownIds);
+
+    // Backfill last season's game log once. Without it the player pages
+    // have nothing to show between February and September, which is most
+    // of the year. It never changes again, so this is skipped thereafter.
+    if (!(await hasWeeksFor(supabase, seasonYear - 1))) {
+      for (let week = 1; week <= REGULAR_SEASON_WEEKS; week++) {
+        weekRows += await syncWeekStats(supabase, seasonYear - 1, week, knownIds);
+      }
+    }
+
+    // In the preseason state.week counts preseason weeks, which have no
+    // regular-season stats behind them.
+    const throughWeek = state.season_type === "pre" ? 0 : Math.max(0, state.week);
+    for (let week = 1; week <= throughWeek; week++) {
+      weekRows += await syncWeekStats(supabase, seasonYear, week, knownIds);
+    }
+  }
+
+  // Sleeper only carries an espn_id for about a fifth of the pool, and the
+  // gaps include names like Ja'Marr Chase — resolve the rest off ESPN's
+  // team rosters so the player pages have news to show.
+  const espn = await resolveMissingEspnIds(supabase).catch(() => ({
+    attempted: 0,
+    resolved: 0,
+  }));
+
   return {
     synced: ranked.length,
     ranked: ranked.filter((p) => p.pos_rank !== null).length,
     rankedFrom,
+    seasonRows,
+    weekRows,
+    espnIdsResolved: espn.resolved,
   };
 }
 

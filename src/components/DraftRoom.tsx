@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -314,7 +315,12 @@ export function DraftRoom({
                         size="sm"
                       />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm text-ink">{p.full_name}</span>
+                        <Link
+                          href={`/players/${p.id}`}
+                          className="block truncate text-sm text-ink transition-colors hover:text-accent"
+                        >
+                          {p.full_name}
+                        </Link>
                         <span className="font-data text-[10px] text-ink-faint">
                           {/* Position lives in the rank chip on the left. */}
                           {p.team ?? "FA"}

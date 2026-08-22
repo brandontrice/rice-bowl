@@ -19,6 +19,7 @@ export async function TopNav() {
         <nav className="flex items-center gap-1">
           <NavLink href="/">Matchup</NavLink>
           <NavLink href="/season">Season</NavLink>
+          <NavLink href="/players">Players</NavLink>
           <NavLink href="/deck">Deck</NavLink>
 
           {manager && (

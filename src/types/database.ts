@@ -56,6 +56,7 @@ export type Player = {
   ppg: number | null;
   pos_rank: number | null;
   games_played: number | null;
+  espn_id: string | null;
 };
 
 export type DraftStatus = "pending" | "active" | "complete";

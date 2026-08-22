@@ -16,6 +16,7 @@ type SleeperPlayer = {
   years_exp?: number | null;
   status?: string | null;
   fantasy_positions?: string[] | null;
+  espn_id?: number | string | null;
 };
 
 export type SleeperPoolPlayer = Omit<Player, "ppg" | "pos_rank" | "games_played">;
@@ -49,6 +50,7 @@ export async function fetchSleeperPlayerPool(): Promise<SleeperPoolPlayer[]> {
       years_exp: p.years_exp ?? null,
       status: p.status ?? null,
       fantasy_positions: p.fantasy_positions ?? null,
+      espn_id: p.espn_id != null ? String(p.espn_id) : null,
       updated_at: new Date().toISOString(),
     });
   }

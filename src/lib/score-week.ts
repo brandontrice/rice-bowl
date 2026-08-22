@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchSleeperState, fetchSleeperWeekStats } from "@/lib/sleeper";
 import { computeWeeklyPoints } from "@/lib/scoring";
+import { syncWeekStats, loadKnownPlayerIds } from "@/lib/player-stats";
 
 export type ScoreWeekResult = {
   skipped?: string;
@@ -37,6 +38,22 @@ export async function scoreWeek(
 
   const seasonYear = (week as unknown as { seasons: { year: number } }).seasons.year;
   const stats = await fetchSleeperWeekStats(seasonYear, week.week_number);
+
+  // We already hold the whole league's stat lines for this week, so
+  // persisting them costs a couple of batched upserts and is what keeps
+  // the player pages' current-season numbers moving during games. Never
+  // fatal: a matchup must still score if the stat archive hiccups.
+  try {
+    await syncWeekStats(
+      supabase,
+      seasonYear,
+      week.week_number,
+      await loadKnownPlayerIds(supabase),
+      stats,
+    );
+  } catch (error) {
+    console.error("player_week_stats upsert failed", error);
+  }
 
   const computedAt = new Date().toISOString();
   const rows = (picks ?? []).map((p) => {

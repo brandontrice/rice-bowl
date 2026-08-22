@@ -26,10 +26,12 @@ in the Supabase SQL Editor:
 | `0002_allowlist_read.sql` | Read access to `manager_allowlist` for the waiting room |
 | `0003_atomic_pick_and_indexes.sql` | The `make_pick()` locking function, week-scoped indexes, Realtime on `weekly_scores`, and the `ppg`/`pos_rank` columns the draft board ranks by |
 | `0004_pick_clock.sql` | `drafts.deadline_at` / `pick_seconds`, the `arm_draft_clock()` and `auto_pick()` functions, and `make_pick()` redefined to roll the clock forward |
+| `0005_player_stats_and_news.sql` | `players.espn_id`, the `player_season_stats` / `player_week_stats` tables, and the `player_season_to_date` view behind the rankings browser |
 
-Only `0003` and `0004` are safe to re-run: they guard every statement with
-`if not exists`, a `do` block, or `create or replace`. `0001` and `0002`
-are not — between them they have 21 bare `create policy` statements, a
+Only `0003`, `0004`, and `0005` are safe to re-run: they guard every
+statement with `if not exists`, a `do` block, or `create or replace`.
+`0001` and `0002` are not — between them they have 21 bare `create policy`
+statements, a
 `create trigger`, and several `alter publication ... add table`, all of
 which error if the object is already there.
 
@@ -234,6 +236,47 @@ The full deck (with which are auto-enforced vs. honor-system) lives in
 [`src/lib/house-rules.ts`](src/lib/house-rules.ts). Scoring math is in
 [`src/lib/scoring.ts`](src/lib/scoring.ts); draft-pool/roster logic is in
 [`src/lib/draft.ts`](src/lib/draft.ts).
+
+## Player rankings and news
+
+`/players` ranks the pool by last completed season's points per game, with
+this season's beside it as games are played. Click through to
+`/players/[id]` for both seasons' totals, a week-by-week game log, and
+recent news. Player names on the draft board and on the matchup rosters
+link straight there.
+
+**Where each number comes from.** Completed seasons are pulled wholesale
+from Sleeper once and never change again, into `player_season_stats`. The
+current season is assembled a week at a time into `player_week_stats`, and
+its totals are a view (`player_season_to_date`) rather than a stored copy,
+so there is no second number to drift. Between February and September the
+current season is empty, so the game log falls back to last season's,
+labelled as such.
+
+**Why this year updates during games.** The matchup scoring path already
+fetches the whole league's weekly stat lines to score the two rosters, so
+it writes them to `player_week_stats` on the way past. That runs off the
+matchup page's own polling, which means player pages move while games are
+being played without a second scheduler.
+
+**News is a best-effort extra**, from ESPN's athlete overview endpoint. If
+it fails the page renders without it.
+
+A warning if you ever touch this: ESPN's
+`nfl/news?playerId=` endpoint looks like the right one and is not. It
+answers 200 and silently ignores the filter, returning the same
+league-wide feed for every player — it will look like it works.
+`athletes/{id}/overview` is the endpoint that is genuinely scoped, and it
+also carries the Rotowire fantasy note, which is usually the useful part.
+
+Reaching it needs an ESPN athlete id. Sleeper carries one, but only for
+about a fifth of the pool — Ja'Marr Chase and Amon-Ra St. Brown are both
+missing one — so [`espn-ids.ts`](src/lib/espn-ids.ts) fills the gaps from
+ESPN's 32 team rosters, matching on name and preferring the same team,
+which is what keeps the two Josh Allens apart. That runs during the daily
+sync and only for players still missing an id. Coverage is around 94% of
+non-defense players; team defenses have no ESPN athlete record at all and
+show no news by design.
 
 ## The pick clock
 

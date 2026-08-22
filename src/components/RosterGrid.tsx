@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { DraftPick, Manager, Player, Week } from "@/types/database";
 import { rosterSlotDefs } from "@/lib/draft";
 import { HOUSE_RULE_BY_KEY } from "@/lib/house-rules";
@@ -79,12 +80,15 @@ export function RosterGrid({
                 <span className="h-6 w-6 rounded-lg border border-dashed border-seam" />
               )}
               {row.pick?.players ? (
-                <span className="truncate text-sm text-ink">
+                <Link
+                  href={`/players/${row.pick.player_id}`}
+                  className="truncate text-sm text-ink transition-colors hover:text-accent"
+                >
                   {row.pick.players.full_name}
                   <span className="ml-1.5 font-data text-[10px] text-ink-faint">
                     {row.pick.players.team}
                   </span>
-                </span>
+                </Link>
               ) : (
                 <span className="text-sm text-ink-faint">Empty</span>
               )}
