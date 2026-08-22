@@ -60,8 +60,9 @@ in the Supabase SQL Editor:
 | `0008_nfl_schedule.sql` | The `nfl_games` table behind `/schedule` — kickoff times, networks, venues and scores |
 | `0009_game_time_tbd.sql` | `nfl_games.time_valid`, so flex-scheduled games show "Time TBD" rather than a midnight placeholder |
 | `0010_player_lock.sql` | `player_is_locked()`, enforced inside `make_pick()` and `auto_pick()` so a kicked-off player can't be drafted |
+| `0011_draft_ready.sql` | The `draft_ready` table and `set_draft_ready()`; `make_pick()` / `auto_pick()` now refuse while a draft is pending |
 
-Only `0003` through `0010` are safe to re-run: they guard every statement
+Only `0003` through `0011` are safe to re-run: they guard every statement
 with `if not exists`, a `do` block, or `create or replace`.
 `0001` and `0002` are not — between them they have 21 bare `create policy`
 statements, a `create trigger`, and several `alter publication ... add
@@ -267,24 +268,53 @@ into `players` (re-synced automatically whenever the cache is >12h stale).
 
 ## Preseason
 
-The league plays weeks 1 through 18 and nothing else. No week is dealt
-during the preseason or the playoffs.
+The league plays weeks 1 through 18. During the preseason the *upcoming*
+week is Week 1, so its card is dealt and its draft room is open well
+before the opener — the draft is gated on both managers being ready, not
+on the calendar. After the regular season there is nothing left to deal.
 
-This mattered more than it sounds. Sleeper's `state.week` counts preseason
-weeks, so in August it reads 2 — and `ensureCurrentWeek` acted on it
-directly. The first time both managers were signed in during August it
-would have created a competitive "Week 2", skipping Week 1 entirely and
-settling the rivalry on exhibition football where starters sit after a
-series.
+What is not done is read `state.week` directly. Sleeper counts preseason
+weeks in it, so in August it reads 2, and `ensureCurrentWeek` used to act
+on that: the first time both managers signed in during August it would
+have created a competitive "Week 2", skipping Week 1 and settling the
+rivalry on exhibition football where starters sit after a series.
 
-`ensureCurrentWeek` now returns `not-started` unless
-`state.season_type === "regular"`, and the home page shows a countdown to
-the first kickoff rather than a matchup.
+The same counter had a second bite. `scoreWeek` decided a week was over
+with `state.week > week_number`, which is true during the preseason for
+Week 1 — so Week 1 would have been marked complete and a Bowl Point
+awarded before a snap. Finalising now requires the regular season to have
+moved past the week, or the season to be over.
 
 Everything that reads the NFL rather than the rivalry keeps working
 year-round: the schedule, the player rankings with last season's
 production and this year's projections, and the deck. Only the drafting
 waits.
+
+## Starting a draft
+
+Nobody picks until both managers have pressed **Start draft**.
+
+The lobby tracks two separate things and shows both. *In the room* is live
+Realtime presence — who has the draft room open right now. *Ready* is the
+deliberate click, stored in `draft_ready`. Presence alone would start a
+draft because somebody left a tab open overnight; readiness alone would
+let you start into an empty room.
+
+The flip from `pending` to `active` happens inside `set_draft_ready()`
+under a row lock, so two simultaneous clicks can't start it twice. Both
+`make_pick()` and `auto_pick()` refuse while the draft is `pending` — it
+is a real gate, not a hidden button. The player pool stays shut too:
+seeing who's available is half of drafting, and one manager browsing early
+is a head start the other didn't get.
+
+Before this, the draft began as a side effect of the first pick — whoever
+opened the room first could draft into an empty room.
+
+Backing out is possible while `pending` and refused afterwards; leaving
+mid-draft would strand the other manager. If the pick clock was armed
+while waiting, it restarts at the moment the draft goes live rather than
+counting down from whenever the length was set.
+
 ## The week's rhythm
 
 | When | What happens |

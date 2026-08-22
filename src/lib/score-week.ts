@@ -102,9 +102,15 @@ export async function scoreWeek(
   const scoreB = totals.get(managerB) ?? 0;
 
   const state = await fetchSleeperState();
+  // A week is over once the regular season has moved past it, or the whole
+  // season has. The season_type check is load-bearing: during the preseason
+  // state.week reads 2, so without it Week 1 would be marked complete and a
+  // Bowl Point awarded before a snap had been played.
   const weekHasEnded =
     Number(state.season) > seasonYear ||
-    (Number(state.season) === seasonYear && state.week > week.week_number);
+    (Number(state.season) === seasonYear &&
+      (state.season_type === "post" ||
+        (state.season_type === "regular" && state.week > week.week_number)));
 
   const update: Record<string, unknown> = { home_score: scoreA, away_score: scoreB };
   if (weekHasEnded) {

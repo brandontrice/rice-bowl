@@ -4,6 +4,7 @@ import { dealHouseRule } from "@/lib/house-rules";
 import { mulberry32, seedFromWeek, pick as rngPick } from "@/lib/prng";
 import { buildSnakeOrder, derivePoolLock } from "@/lib/draft";
 import { fetchWeekKickoff } from "@/lib/schedule";
+import { REGULAR_SEASON_WEEKS } from "@/lib/nfl-schedule";
 import type { Week, Draft } from "@/types/database";
 
 export type EnsureWeekResult =
@@ -15,12 +16,10 @@ export type EnsureWeekResult =
  * Gets this NFL week's matchup, dealing the House Rule and building the
  * draft if it doesn't exist yet.
  *
- * Only ever during the regular season. Sleeper's `state.week` counts
- * preseason weeks too, so in August it reads 2 — which would have created
- * a competitive "Week 2", skipping Week 1 entirely and playing the rivalry
- * out against exhibition football where starters sit after a drive.
- * Preseason and the playoffs are for watching; the league plays weeks 1
- * through 18.
+ * The league plays weeks 1 through 18. During the preseason the upcoming
+ * week is Week 1, so its card is dealt and its draft is ready well before
+ * the opener — the draft itself is gated on both managers being ready, not
+ * on the calendar. After the regular season there is nothing left to deal.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<EnsureWeekResult> {
@@ -39,14 +38,20 @@ export async function ensureCurrentWeek(supabase: SupabaseClient<any>): Promise<
   const state = await fetchSleeperState();
   const seasonYear = Number(state.season);
 
-  // Nothing is dealt outside the regular season. state.week counts
-  // preseason weeks, so acting on it in August would have created a
-  // competitive "Week 2" against exhibition football.
-  if (state.season_type !== "regular") {
+  // Once the regular season is over there is nothing left to deal.
+  if (state.season_type === "post") {
     return { status: "not-started", season: seasonYear, seasonType: state.season_type };
   }
 
-  const weekNumber = Math.max(1, state.week);
+  // During the preseason the *upcoming* week is Week 1, so the card is
+  // dealt and the draft is ready well before the opener. What is not done
+  // is read state.week directly: it counts preseason weeks, so in August
+  // it reads 2 and would have created a competitive "Week 2", skipping
+  // Week 1 and settling the rivalry on exhibition football.
+  const weekNumber =
+    state.season_type === "regular"
+      ? Math.min(REGULAR_SEASON_WEEKS, Math.max(1, state.week))
+      : 1;
 
   let { data: season } = await supabase
     .from("seasons")

@@ -94,6 +94,11 @@ export default async function DraftPage({
   );
   const lockedTeams = [...teamGames.values()].filter((g) => g.locked).map((g) => g.team);
 
+  const { data: readyRows } = await supabase
+    .from("draft_ready")
+    .select("manager_id")
+    .eq("draft_id", draftRow.id);
+
   const { data: picks } = await supabase
     .from("draft_picks")
     .select("*, players(*)")
@@ -111,6 +116,7 @@ export default async function DraftPage({
         initialPicks={(picks ?? []) as (DraftPick & { players: Player | null })[]}
         poolRestrictionReason={restriction.reason}
         lockedTeams={lockedTeams}
+        initialReady={(readyRows ?? []).map((r) => r.manager_id as string)}
       />
     </Shell>
   );

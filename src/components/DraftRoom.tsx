@@ -9,6 +9,7 @@ import { positionColor } from "@/lib/rule-style";
 import { HouseRuleCard } from "@/components/HouseRuleCard";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PickClock } from "@/components/PickClock";
+import { DraftLobby } from "@/components/DraftLobby";
 import type { Draft, DraftPick, Manager, Player, Week } from "@/types/database";
 
 type PickWithPlayer = DraftPick & { players: Player | null };
@@ -25,6 +26,7 @@ export function DraftRoom({
   initialPicks,
   poolRestrictionReason,
   lockedTeams,
+  initialReady,
 }: {
   week: Week;
   draft: Draft;
@@ -35,6 +37,8 @@ export function DraftRoom({
   poolRestrictionReason: string | null;
   /** Teams whose game has kicked off — their players can no longer be taken. */
   lockedTeams: string[];
+  /** Managers who have pressed Start draft. */
+  initialReady: string[];
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initialDraft);
@@ -193,9 +197,22 @@ export function DraftRoom({
         </div>
       )}
 
+      {draft.status === "pending" && (
+        <DraftLobby
+          draftId={draft.id}
+          managers={managers}
+          currentManagerId={currentManagerId}
+          initialReady={initialReady}
+        />
+      )}
+
       <div
         className={`rounded-2xl border p-5 text-center ${
-          isMyTurn ? "animate-on-clock border-accent bg-accent/10" : "border-seam bg-surface"
+          draft.status === "pending"
+            ? "hidden"
+            : isMyTurn
+              ? "animate-on-clock border-accent bg-accent/10"
+              : "border-seam bg-surface"
         }`}
       >
         {draft.status === "complete" ? (
@@ -251,7 +268,7 @@ export function DraftRoom({
         />
 
         <div className="order-last flex flex-col gap-3 lg:order-none">
-          {draft.status !== "complete" ? (
+          {draft.status === "active" ? (
             <>
               <div className="flex flex-wrap items-center gap-1.5">
                 {POSITION_TABS.map((tab) => (
@@ -379,6 +396,13 @@ export function DraftRoom({
                 {players.length - pickedIds.size}
               </p>
             </>
+          ) : draft.status === "pending" ? (
+            // The pool stays shut until both managers are ready — seeing who
+            // is available is half of drafting, and one manager browsing it
+            // early is a head start the other didn't get.
+            <p className="rounded-2xl border border-dashed border-seam px-4 py-12 text-center text-sm text-ink-dim">
+              The board opens when both of you have started.
+            </p>
           ) : (
             <a
               href={`/week/${week.id}`}
